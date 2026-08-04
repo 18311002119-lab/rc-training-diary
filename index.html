@@ -15,7 +15,7 @@ button,input,select,textarea{font:inherit}button{border:0;border-radius:11px;pad
 input,select,textarea{width:100%;padding:10px 11px;border-radius:11px;border:1px solid var(--line);background:#0d151f;color:var(--text);outline:none}input:focus,select:focus,textarea:focus{border-color:var(--blue)}textarea{min-height:90px;resize:vertical}
 nav{display:flex;flex-wrap:wrap;gap:8px;margin:16px 0}nav a{color:var(--text);text-decoration:none;padding:8px 11px;border:1px solid var(--line);border-radius:10px;background:rgba(255,255,255,.03);font-size:.88rem}
 .grid{display:grid;gap:15px}.metrics{grid-template-columns:repeat(5,minmax(0,1fr))}.two{grid-template-columns:1.1fr .9fr}.card{padding:19px}section{margin-top:19px}.title{display:flex;justify-content:space-between;gap:12px;align-items:end;margin:0 0 10px}.title h2{margin:0;font-size:1.35rem}.small,.muted{color:var(--muted);font-size:.84rem}
-.toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:end}.toolbar .field{min-width:220px}.toolbar .field.smallfield{min-width:160px}.label{font-size:.82rem;color:var(--muted)}.value{font-size:1.9rem;font-weight:900;letter-spacing:-.04em;margin:.15rem 0}.green{color:var(--green)}.blue{color:var(--blue)}.orange{color:var(--orange)}
+.toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:end}.toolbar .field{min-width:220px}.toolbar .field.smallfield{min-width:125px}#dashboard .toolbar{width:100%}#dashboardSession{min-width:310px}.label{font-size:.82rem;color:var(--muted)}.value{font-size:1.9rem;font-weight:900;letter-spacing:-.04em;margin:.15rem 0}.green{color:var(--green)}.blue{color:var(--blue)}.orange{color:var(--orange)}
 .coach{border-left:4px solid var(--green);background:linear-gradient(90deg,rgba(66,211,146,.1),rgba(66,211,146,.02))}.hidden{display:none!important}
 .formgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:11px}.field label{display:block;color:var(--muted);font-size:.82rem;margin-bottom:4px}.full{grid-column:1/-1}.actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
 table{width:100%;border-collapse:collapse;font-size:.88rem}th,td{padding:10px 8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}th{color:var(--muted)}tbody tr:last-child td{border-bottom:0}.tablewrap{overflow:auto}tr.selected{background:rgba(66,211,146,.07)}
@@ -59,10 +59,27 @@ footer{text-align:center;color:var(--muted);font-size:.8rem;margin-top:25px}
   <div class="title">
     <h2>当前仪表盘</h2>
     <div class="toolbar">
+      <div class="field smallfield">
+        <label>年</label>
+        <select id="dashboardYearFilter"></select>
+      </div>
+      <div class="field smallfield">
+        <label>月</label>
+        <select id="dashboardMonthFilter"></select>
+      </div>
+      <div class="field smallfield">
+        <label>日</label>
+        <select id="dashboardDayFilter"></select>
+      </div>
+      <div class="field smallfield">
+        <label>赛道</label>
+        <select id="dashboardTrackFilter"></select>
+      </div>
       <div class="field">
         <label>选择仪表盘训练记录</label>
         <select id="dashboardSession"></select>
       </div>
+      <button id="clearDashboardFiltersBtn" class="ghost" type="button">清空筛选</button>
       <div class="small" id="syncText"></div>
     </div>
   </div>
@@ -258,17 +275,75 @@ async function loadSessions(){
  setSuggestedSessionNo();
  autofillTrackRecord()
 }
+function optionHTML(value,label){return `<option value="${esc(value)}">${esc(label)}</option>`}
+function uniqueSorted(values,desc=false){
+ const items=[...new Set(values.filter(Boolean))].sort();
+ return desc?items.reverse():items
+}
+function setFilterOptions(id,items,allLabel,formatter=v=>v){
+ const el=$(id),old=el.value;
+ el.innerHTML=optionHTML("",allLabel)+items.map(v=>optionHTML(v,formatter(v))).join("");
+ el.value=items.includes(old)?old:""
+}
+function dashboardFilteredSessions(){
+ const year=$("dashboardYearFilter").value;
+ const month=$("dashboardMonthFilter").value;
+ const day=$("dashboardDayFilter").value;
+ const track=$("dashboardTrackFilter").value;
+ return sessions.filter(s=>{
+  const parts=String(s.session_date||"").split("-");
+  return(!year||parts[0]===year)
+    &&(!month||parts[1]===month)
+    &&(!day||parts[2]===day)
+    &&(!track||s.track===track)
+ })
+}
+function renderDashboardSessionOptions(){
+ const rows=dashboardFilteredSessions();
+ if(!rows.some(s=>s.id===selectedSessionId))selectedSessionId=rows[0]?.id||null;
+ $("dashboardSession").innerHTML=rows.length
+  ?rows.map(s=>`<option value="${s.id}">${esc(sessionName(s))}</option>`).join("")
+  :'<option value="">无匹配训练记录</option>';
+ $("dashboardSession").disabled=!rows.length;
+ $("dashboardSession").value=selectedSessionId||""
+}
+function setDashboardFiltersFromSession(s){
+ if(!s)return;
+ const parts=String(s.session_date||"").split("-");
+ $("dashboardYearFilter").value=parts[0]||"";
+ $("dashboardMonthFilter").value=parts[1]||"";
+ $("dashboardDayFilter").value=parts[2]||"";
+ $("dashboardTrackFilter").value=s.track||""
+}
 function fillFilters(){
  const tracks=[...new Set([...sessions.map(s=>s.track),...trackRecords.map(r=>r.track)])].sort();
  const opts='<option value="">全部赛道</option>'+tracks.map(t=>`<option value="${esc(t)}">${esc(t)}</option>`).join("");
  const old1=$("sessionTrackFilter").value,old2=$("trendTrackFilter").value;
- $("sessionTrackFilter").innerHTML=opts;$("trendTrackFilter").innerHTML=opts;
- $("sessionTrackFilter").value=tracks.includes(old1)?old1:"";$("trendTrackFilter").value=tracks.includes(old2)?old2:(tracks.includes("Rhein-Main")?"Rhein-Main":"");
- $("dashboardSession").innerHTML=sessions.map(s=>`<option value="${s.id}">${esc(sessionName(s))}</option>`).join("");
- if(selectedSessionId)$("dashboardSession").value=selectedSessionId;
+ $("sessionTrackFilter").innerHTML=opts;
+ $("trendTrackFilter").innerHTML=opts;
+ $("sessionTrackFilter").value=tracks.includes(old1)?old1:"";
+ $("trendTrackFilter").value=tracks.includes(old2)?old2:(tracks.includes("Rhein-Main")?"Rhein-Main":"");
+
+ const dates=sessions.map(s=>String(s.session_date||"").split("-"));
+ setFilterOptions("dashboardYearFilter",uniqueSorted(dates.map(p=>p[0]),true),"全部年份");
+ setFilterOptions("dashboardMonthFilter",uniqueSorted(dates.map(p=>p[1])),"全部月份",v=>`${Number(v)}月`);
+ setFilterOptions("dashboardDayFilter",uniqueSorted(dates.map(p=>p[2])),"全部日期",v=>`${Number(v)}日`);
+ setFilterOptions("dashboardTrackFilter",uniqueSorted(sessions.map(s=>s.track)),"全部赛道");
+ renderDashboardSessionOptions()
+}
+function clearDashboard(){
+ $("mBestPercent").textContent="—";
+ $("mPercentLabel").textContent="无匹配训练记录";
+ $("mBest").textContent="—";$("mBestNote").textContent="请调整筛选条件";
+ $("mAvg").textContent="—";$("mAvgNote").textContent="—";
+ $("mStable").textContent="—";$("mStableNote").textContent="—";
+ $("mMistakes").textContent="—";$("mMistakesNote").textContent="—";
+ $("coachText").textContent="暂无匹配训练记录。";
+ $("goalText").textContent="请调整筛选条件。"
 }
 function renderDashboard(){
- const s=sessions.find(x=>x.id===selectedSessionId)||sessions[0];if(!s)return;
+ const s=sessions.find(x=>x.id===selectedSessionId);
+ if(!s){clearDashboard();return}
  const sameTrackClass=sessions.filter(x=>trackKey(x)===trackKey(s));
  const trackP=sameTrackClass.map(x=>Number(x.record_percent)).filter(Number.isFinite);
  $("mBestPercent").textContent=trackP.length?pct(Math.max(...trackP)):"—";
@@ -341,7 +416,15 @@ function renderComparison(){
  $("compareRows").innerHTML=selected.map((s,i)=>`<tr><td>${i===0?"基准 · ":""}${esc(sessionCode(s))}<br><span class="small">${esc(s.track)}</span></td><td>${pct(s.record_percent)}</td><td>${sec(s.best_lap)}</td><td>${i===0?"—":delta(s.best_lap,base.best_lap)}</td><td>${sec(s.average_lap)}</td><td>${i===0?"—":delta(s.average_lap,base.average_lap)}</td><td>${sec(s.best5_average)}</td><td>${sec(s.median_lap)}</td><td>${s.mistake_count??"—"}</td></tr>`).join("");
 }
 function renderAll(){fillFilters();renderDashboard();renderSessions();renderComparison();drawTrend()}
-function selectDashboard(id){selectedSessionId=id;$("dashboardSession").value=id;renderDashboard();renderSessions();location.hash="#dashboard"}
+function selectDashboard(id){
+ selectedSessionId=id;
+ const s=sessions.find(x=>x.id===id);
+ setDashboardFiltersFromSession(s);
+ renderDashboardSessionOptions();
+ renderDashboard();
+ renderSessions();
+ location.hash="#dashboard"
+}
 function toggleCompare(id,checked){if(checked){if(compareIds.size>=4){toast("最多对比4条记录。",true);renderSessions();return}compareIds.add(id)}else compareIds.delete(id);renderComparison()}
 async function removeSession(id){if(!confirm("确认删除这条训练记录？"))return;const {error}=await client.from("training_sessions").delete().eq("id",id);if(error)return toast(error.message,true);compareIds.delete(id);if(selectedSessionId===id)selectedSessionId=null;toast("已删除。");await loadSessions()}
 async function saveForm(ev){
@@ -391,7 +474,24 @@ $("fLapTimes").addEventListener("input",()=>{
  $(id).addEventListener("change",autofillTrackRecord);
  $(id).addEventListener("blur",autofillTrackRecord)
 });
-$("dashboardSession").onchange=e=>{selectedSessionId=e.target.value;renderDashboard();renderSessions()};
+$("dashboardSession").onchange=e=>{
+ selectedSessionId=e.target.value||null;
+ renderDashboard();
+ renderSessions()
+};
+["dashboardYearFilter","dashboardMonthFilter","dashboardDayFilter","dashboardTrackFilter"].forEach(id=>{
+ $(id).onchange=()=>{
+  renderDashboardSessionOptions();
+  renderDashboard();
+  renderSessions()
+ }
+});
+$("clearDashboardFiltersBtn").onclick=()=>{
+ ["dashboardYearFilter","dashboardMonthFilter","dashboardDayFilter","dashboardTrackFilter"].forEach(id=>$(id).value="");
+ renderDashboardSessionOptions();
+ renderDashboard();
+ renderSessions()
+};
 $("sessionTrackFilter").onchange=renderSessions;
 $("trendTrackFilter").onchange=drawTrend;
 $("clearCompareBtn").onclick=()=>{compareIds.clear();renderSessions();renderComparison()};
