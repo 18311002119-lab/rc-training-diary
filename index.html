@@ -21,7 +21,7 @@ nav{display:flex;flex-wrap:wrap;gap:8px;margin:16px 0}nav a{color:var(--text);te
 table{width:100%;border-collapse:collapse;font-size:.88rem}th,td{padding:10px 8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}th{color:var(--muted)}tbody tr:last-child td{border-bottom:0}.tablewrap{overflow:auto}tr.selected{background:rgba(66,211,146,.07)}
 .tag{display:inline-block;padding:2px 7px;border-radius:999px;font-size:.72rem;font-weight:800;background:rgba(90,169,255,.12);color:#b7d9ff}.tag.coachsrc{background:rgba(66,211,146,.12);color:#b9f3d9}.note{padding:13px;border:1px solid rgba(255,189,89,.25);background:rgba(255,189,89,.07);color:#ffe2aa;border-radius:13px;font-size:.88rem}.info{padding:12px;border:1px solid rgba(90,169,255,.25);background:rgba(90,169,255,.07);color:#cfe5ff;border-radius:13px;font-size:.86rem}
 canvas{width:100%;height:300px;display:block}.empty{text-align:center;color:var(--muted);padding:28px}.toast{position:fixed;right:18px;bottom:18px;max-width:380px;padding:12px 15px;border-radius:12px;background:#1d2c3e;border:1px solid var(--line);box-shadow:0 12px 35px rgba(0,0,0,.35);z-index:10}
-.compare-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.compare-card{border:1px solid var(--line);border-radius:15px;padding:14px;background:rgba(255,255,255,.025)}.compare-card h3{margin:0 0 8px;font-size:1rem}.delta-good{color:var(--green)}.delta-bad{color:var(--red)}
+.group-list{display:grid;gap:10px}.record-group{border:1px solid var(--line);border-radius:15px;background:rgba(255,255,255,.018);overflow:hidden}.record-group>summary{list-style:none;cursor:pointer;padding:13px 15px;display:flex;justify-content:space-between;align-items:center;gap:12px;font-weight:900;background:rgba(255,255,255,.025)}.record-group>summary::-webkit-details-marker{display:none}.record-group>summary:before{content:"▸";color:var(--green);transition:transform .16s ease}.record-group[open]>summary:before{transform:rotate(90deg)}.group-title{flex:1}.group-meta{color:var(--muted);font-size:.8rem;font-weight:600}.group-body{padding:0 12px 12px}.group-body table{margin-top:4px}.view-switch{display:flex;gap:6px;flex-wrap:wrap}.view-switch button.active{background:var(--green);color:#062117}.view-switch button:not(.active){background:#25364b;color:var(--text)}.compare-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.compare-card{border:1px solid var(--line);border-radius:15px;padding:14px;background:rgba(255,255,255,.025)}.compare-card h3{margin:0 0 8px;font-size:1rem}.delta-good{color:var(--green)}.delta-bad{color:var(--red)}
 footer{text-align:center;color:var(--muted);font-size:.8rem;margin-top:25px}
 @media(max-width:1020px){.metrics{grid-template-columns:repeat(3,1fr)}.two{grid-template-columns:1fr}.compare-grid{grid-template-columns:1fr 1fr}}@media(max-width:650px){.metrics,.formgrid{grid-template-columns:1fr 1fr}.full{grid-column:1/-1}.hero{padding:23px 18px}.toolbar .field{min-width:100%}}@media(max-width:470px){.metrics,.formgrid,.compare-grid{grid-template-columns:1fr}.full{grid-column:auto}.authbox input{min-width:100%}}
 </style>
@@ -31,7 +31,7 @@ footer{text-align:center;color:var(--muted);font-size:.8rem;margin-top:25px}
 <header class="hero">
   <div class="eyebrow">VRC PRO · FUTABA T10PXR</div>
   <h1>RC练车电子教练</h1>
-  <div class="sub">在线保存练习数据。跨赛道用“相对赛道纪录百分比”比较水平；同赛道用圈速、平均和稳定性比较进步。</div>
+  <div class="sub">在线保存练习数据。跨赛道用“相对赛道纪录百分比”比较水平；同赛道用圈速、平均和稳定性比较进步。训练记录可按日、月或年折叠查看。</div>
   <div class="topbar">
     <div id="authStatus" class="status">尚未登录</div>
     <div class="authbox">
@@ -116,14 +116,22 @@ footer{text-align:center;color:var(--muted);font-size:.8rem;margin-top:25px}
     <h2>训练记录</h2>
     <div class="toolbar">
       <div class="field smallfield"><label>按赛道筛选</label><select id="sessionTrackFilter"></select></div>
+      <div class="field">
+        <label>折叠方式</label>
+        <div class="view-switch" id="groupModeButtons">
+          <button type="button" class="active" data-group="day">按日</button>
+          <button type="button" data-group="month">按月</button>
+          <button type="button" data-group="year">按年</button>
+        </div>
+      </div>
+      <button id="expandAllBtn" class="ghost">全部展开</button>
+      <button id="collapseAllBtn" class="ghost">全部折叠</button>
       <button id="clearCompareBtn" class="ghost">清空对比选择</button>
     </div>
   </div>
-  <div class="info">同赛道、同组别可以直接比较秒数；不同赛道之间应优先比较“纪录%”。最多选择4条记录进行对比。</div>
-  <div class="card tablewrap" style="margin-top:10px">
-    <table><thead><tr><th>对比</th><th>训练编号</th><th>赛道 / 组别</th><th>圈数</th><th>PB</th><th>平均</th><th>纪录%</th><th>失误</th><th>来源</th><th>操作</th></tr></thead><tbody id="sessionRows"></tbody></table>
-    <div id="emptyRows" class="empty hidden">暂无数据。</div>
-  </div>
+  <div class="info">同赛道、同组别可以直接比较秒数；不同赛道之间应优先比较“纪录%”。最多选择4条训练记录进行对比。</div>
+  <div id="groupedSessions" class="group-list" style="margin-top:10px"></div>
+  <div id="emptyRows" class="empty card hidden" style="margin-top:10px">暂无数据。</div>
 </section>
 
 <section id="compare">
@@ -147,7 +155,7 @@ footer{text-align:center;color:var(--muted);font-size:.8rem;margin-top:25px}
 <script>
 const cfg=window.RC_COACH_CONFIG;
 const client=window.supabase.createClient(cfg.supabaseUrl,cfg.supabasePublishableKey,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
-let currentUser=null,sessions=[],selectedSessionId=null,compareIds=new Set(),supportsPercent=true;
+let currentUser=null,sessions=[],selectedSessionId=null,compareIds=new Set(),supportsPercent=true,sessionGroupMode="day";
 const $=id=>document.getElementById(id);
 function toast(msg,bad=false){const el=$("toast");el.textContent=msg;el.style.borderColor=bad?"var(--red)":"var(--green)";el.classList.remove("hidden");setTimeout(()=>el.classList.add("hidden"),4000)}
 function sec(v){return v===null||v===undefined||v===""?"—":Number(v).toFixed(3)+" s"}
@@ -207,15 +215,52 @@ function renderDashboard(){
  $("coachText").innerHTML=s.coach_note?`<strong>${esc(s.coach_note)}</strong><div class="small" style="margin-top:8px">${esc(sessionName(s))}</div>`:"暂无教练评语。";
  $("goalText").textContent=s.next_goal||"未设置下一目标。";
 }
-function renderSessions(){
- const filter=$("sessionTrackFilter").value,rows=filter?sessions.filter(s=>s.track===filter):sessions;
- $("sessionRows").innerHTML=rows.map(s=>`<tr class="${s.id===selectedSessionId?"selected":""}">
+function sessionRowHTML(s){
+ return `<tr class="${s.id===selectedSessionId?"selected":""}">
  <td><input type="checkbox" ${compareIds.has(s.id)?"checked":""} onchange="toggleCompare('${s.id}',this.checked)"></td>
- <td><strong>${esc(sessionCode(s))}</strong></td><td><strong>${esc(s.track)}</strong><br><span class="small">${esc(s.class_name)} · ${esc(s.mode)}</span></td>
+ <td><strong>${esc(sessionCode(s))}</strong></td>
+ <td><strong>${esc(s.track)}</strong><br><span class="small">${esc(s.class_name)} · ${esc(s.mode)}</span></td>
  <td>${s.lap_count??"—"}</td><td>${sec(s.best_lap)}</td><td>${sec(s.average_lap)}</td><td>${pct(s.record_percent)}</td><td>${s.mistake_count??"—"}</td>
  <td><span class="tag ${s.source==="coach-import"?"coachsrc":""}">${s.source==="coach-import"?"AI教练":"网页"}</span></td>
- <td><button class="ghost" onclick="selectDashboard('${s.id}')">仪表盘</button> <button class="danger" onclick="removeSession('${s.id}')">删除</button></td></tr>`).join("");
+ <td><button class="ghost" onclick="selectDashboard('${s.id}')">仪表盘</button> <button class="danger" onclick="removeSession('${s.id}')">删除</button></td></tr>`
+}
+function groupInfo(s,mode){
+ if(mode==="year")return{key:s.session_date.slice(0,4),title:`${s.session_date.slice(0,4)}年`};
+ if(mode==="month")return{key:s.session_date.slice(0,7),title:`${s.session_date.slice(0,4)}年${Number(s.session_date.slice(5,7))}月`};
+ return{key:s.session_date,title:s.session_date}
+}
+function groupSummary(rows){
+ const p=rows.map(x=>Number(x.record_percent)).filter(Number.isFinite);
+ const best=p.length?`最佳 ${pct(Math.max(...p))}`:"无纪录%";
+ const laps=rows.reduce((a,s)=>a+(Number(s.lap_count)||0),0);
+ const tracks=new Set(rows.map(s=>`${s.track}||${s.class_name}`)).size;
+ return`${rows.length}次训练 · ${tracks}个赛道/组别 · ${laps}圈 · ${best}`
+}
+function groupedTableHTML(rows){
+ return `<div class="group-body"><div class="tablewrap"><table>
+ <thead><tr><th>对比</th><th>训练编号</th><th>赛道 / 组别</th><th>圈数</th><th>PB</th><th>平均</th><th>纪录%</th><th>失误</th><th>来源</th><th>操作</th></tr></thead>
+ <tbody>${rows.map(sessionRowHTML).join("")}</tbody></table></div></div>`
+}
+function renderSessions(){
+ const filter=$("sessionTrackFilter").value;
+ const rows=filter?sessions.filter(s=>s.track===filter):sessions;
  $("emptyRows").classList.toggle("hidden",rows.length>0);
+ document.querySelectorAll("#groupModeButtons button").forEach(b=>b.classList.toggle("active",b.dataset.group===sessionGroupMode));
+ if(!rows.length){
+   $("groupedSessions").innerHTML="";
+   return
+ }
+ const groups=new Map();
+ rows.forEach(s=>{
+   const g=groupInfo(s,sessionGroupMode);
+   if(!groups.has(g.key))groups.set(g.key,{title:g.title,rows:[]});
+   groups.get(g.key).rows.push(s)
+ });
+ $("groupedSessions").innerHTML=[...groups.entries()].map(([key,g],i)=>`
+ <details class="record-group" ${i===0?"open":""}>
+   <summary><span class="group-title">${esc(g.title)}</span><span class="group-meta">${esc(groupSummary(g.rows))}</span></summary>
+   ${groupedTableHTML(g.rows)}
+ </details>`).join("");
 }
 function renderComparison(){
  const selected=[...compareIds].map(id=>sessions.find(s=>s.id===id)).filter(Boolean);
@@ -268,7 +313,16 @@ async function boot(session){
 }
 $("loginBtn").onclick=sendMagicLink;$("logoutBtn").onclick=logout;$("sessionForm").onsubmit=saveForm;$("exportBtn").onclick=exportJSON;
 $("dashboardSession").onchange=e=>{selectedSessionId=e.target.value;renderDashboard();renderSessions()};
-$("sessionTrackFilter").onchange=renderSessions;$("trendTrackFilter").onchange=drawTrend;$("clearCompareBtn").onclick=()=>{compareIds.clear();renderSessions();renderComparison()};
+$("sessionTrackFilter").onchange=renderSessions;
+$("trendTrackFilter").onchange=drawTrend;
+$("clearCompareBtn").onclick=()=>{compareIds.clear();renderSessions();renderComparison()};
+$("groupModeButtons").addEventListener("click",e=>{
+ const btn=e.target.closest("button[data-group]");if(!btn)return;
+ sessionGroupMode=btn.dataset.group;
+ renderSessions()
+});
+$("expandAllBtn").onclick=()=>document.querySelectorAll("#groupedSessions details").forEach(d=>d.open=true);
+$("collapseAllBtn").onclick=()=>document.querySelectorAll("#groupedSessions details").forEach(d=>d.open=false);
 $("fDate").value=new Date().toISOString().slice(0,10);
 ["fDate","fTrack","fClass"].forEach(id=>{
  $(""+id).addEventListener("change",()=>{$("fSessionNo").value="";setSuggestedSessionNo()});
