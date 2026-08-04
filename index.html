@@ -62,7 +62,7 @@ footer{text-align:center;color:var(--muted);font-size:.8rem;margin-top:25px}
     </div>
   </div>
   <div class="grid metrics">
-    <div class="card"><div class="label">所有赛道最佳纪录比例</div><div id="mBestPercent" class="value green">—</div><div class="small">跨赛道可比较指标</div></div>
+    <div class="card"><div id="mPercentLabel" class="label">当前赛道/组别最佳纪录比例</div><div id="mBestPercent" class="value green">—</div><div id="mPercentNote" class="small">随所选训练记录变化</div></div>
     <div class="card"><div id="mBestLabel" class="label">所选记录最快圈</div><div id="mBest" class="value green">—</div><div id="mBestNote" class="small">—</div></div>
     <div class="card"><div class="label">所选记录平均圈</div><div id="mAvg" class="value blue">—</div><div id="mAvgNote" class="small">—</div></div>
     <div class="card"><div class="label">最快5圈平均 / 中位数</div><div id="mStable" class="value">—</div><div id="mStableNote" class="small">—</div></div>
@@ -184,8 +184,11 @@ function fillFilters(){
 }
 function renderDashboard(){
  const s=sessions.find(x=>x.id===selectedSessionId)||sessions[0];if(!s)return;
- const allP=sessions.map(x=>Number(x.record_percent)).filter(Number.isFinite);
- $("mBestPercent").textContent=allP.length?pct(Math.max(...allP)):"—";
+ const sameTrackClass=sessions.filter(x=>x.track===s.track&&x.class_name===s.class_name);
+ const trackP=sameTrackClass.map(x=>Number(x.record_percent)).filter(Number.isFinite);
+ $("mBestPercent").textContent=trackP.length?pct(Math.max(...trackP)):"—";
+ $("mPercentLabel").textContent=`${s.track} 最佳纪录比例`;
+ $("mPercentNote").textContent=`${s.class_name} · 当前所选赛道/组别`;
  $("mBest").textContent=sec(s.best_lap);$("mBestNote").textContent=`${s.track} · ${s.class_name}${s.record_percent!=null?` · ${pct(s.record_percent)}纪录`:""}`;
  $("mAvg").textContent=sec(s.average_lap);$("mAvgNote").textContent=s.lap_count?`${s.lap_count}圈训练`:"未记录圈数";
  if(s.best5_average!=null){$("mStable").textContent=sec(s.best5_average);$("mStableNote").textContent=`中位数 ${sec(s.median_lap)}`}
