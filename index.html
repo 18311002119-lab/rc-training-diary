@@ -48,11 +48,11 @@ footer{text-align:center;color:var(--muted);font-size:.8rem;margin-top:25px}
 </header>
 
 <nav>
-<a href="#dashboard">仪表盘</a><a href="#trend">趋势</a><a href="#records">赛道纪录表</a><a href="#add">添加记录</a><a href="#sessions">训练记录</a><a href="#compare">记录对比</a><a href="#coach">教练判断</a>
+<a href="#dashboard">仪表盘</a><a href="#trend">趋势</a><a href="#add">添加记录</a><a href="#sessions">训练记录</a><a href="#compare">记录对比</a><a href="#coach">教练判断</a>
 </nav>
 
 <div id="loginHint" class="note">请先运行数据库脚本并通过邮箱登录。登录后只显示你自己的数据。</div>
-<div id="schemaWarning" class="note hidden">数据库尚未升级到V7。请在Supabase SQL Editor运行 <code>upgrade_track_records_v7.sql</code>。</div>
+<div id="schemaWarning" class="note hidden">数据库尚未升级到V7。请先运行V7数据库升级脚本。</div>
 
 <main id="app" class="hidden">
 <section id="dashboard">
@@ -91,37 +91,8 @@ footer{text-align:center;color:var(--muted);font-size:.8rem;margin-top:25px}
   <div class="card"><canvas id="chart"></canvas></div>
 </section>
 
-<section id="records">
-  <div class="title">
-    <h2>赛道纪录表</h2>
-    <div class="small">唯一匹配：赛道＋车型＋Spec/Mod</div>
-  </div>
-  <form id="recordForm" class="card">
-    <div class="record-form-grid">
-      <div class="field"><label>赛道</label><input id="rTrack" required placeholder="例如 Rhein-Main"></div>
-      <div class="field"><label>车型</label><input id="rVehicleType" required placeholder="例如 1:8 Electric Buggy"></div>
-      <div class="field"><label>组别</label><select id="rVariant"><option value="Spec">Spec</option><option value="Mod">Mod</option></select></div>
-      <div class="field"><label>赛道纪录 / 秒</label><input id="rLap" type="number" step="0.001" min="0" required></div>
-      <div class="field"><label>纪录日期</label><input id="rDate" type="date"></div>
-      <div class="field"><label>来源</label><input id="rSource" placeholder="例如 VRC赛道排行榜"></div>
-      <div class="field wide"><label>备注</label><input id="rNotes" placeholder="可记录车种版本、规则或更新时间"></div>
-    </div>
-    <div class="actions">
-      <button type="submit">保存或更新纪录</button>
-      <button type="button" class="secondary" id="resetRecordBtn">清空</button>
-    </div>
-  </form>
-  <div class="card tablewrap" style="margin-top:10px">
-    <table>
-      <thead><tr><th>赛道</th><th>车型</th><th>组别</th><th>纪录</th><th>纪录日期</th><th>来源 / 备注</th><th>操作</th></tr></thead>
-      <tbody id="recordRows"></tbody>
-    </table>
-    <div id="emptyRecords" class="empty hidden">暂无赛道纪录。</div>
-  </div>
-</section>
-
 <section id="add">
-  <div class="title"><h2>添加训练记录</h2><div class="small">赛道纪录从独立纪录表自动读取</div></div>
+  <div class="title"><h2>添加训练记录</h2><div class="small">纪录百分比根据赛道、车型、组别和最快圈自动计算</div></div>
   <form id="sessionForm" class="card">
     <div class="formgrid">
       <div class="field"><label>日期</label><input id="fDate" type="date" required></div>
@@ -133,10 +104,10 @@ footer{text-align:center;color:var(--muted);font-size:.8rem;margin-top:25px}
       <div class="field"><label>圈数</label><input id="fLaps" type="number" min="1"></div>
       <div class="field"><label>重大失误数</label><input id="fMistakes" type="number" min="0"></div>
       <div class="field"><label>最快圈 / 秒</label><input id="fBest" type="number" step="0.001" min="0"></div>
-      <div class="field"><label>赛道纪录 / 秒</label><input id="fTrackRecord" class="readonly" type="number" step="0.001" min="0" placeholder="请先在赛道纪录表添加" readonly><input id="fTrackRecordId" type="hidden"></div>
+      <input id="fTrackRecord" type="hidden"><input id="fTrackRecordId" type="hidden">
       <div class="field"><label>相对赛道纪录 / %</label><input id="fPercent" type="number" step="0.001" min="0" max="200" placeholder="自动计算" readonly></div>
       <div class="field"><label>平均圈 / 秒</label><input id="fAvg" type="number" step="0.001" min="0"></div>
-      <div class="field"><label>主观状态 1～5</label><input id="fMood" type="number" min="1" max="5"></div>
+      <div class="field"><label>主观评级 1～5</label><input id="fMood" type="number" min="1" max="5" step="0.5" placeholder="例如 3.5"></div>
       <div class="field full"><label>逐圈时间（空格、逗号或换行分隔；填写后自动计算平均、中位数和最快5圈平均）</label><textarea id="fLapTimes" placeholder="39.663 38.963 39.602 ..."></textarea></div>
       <div class="field full"><label>训练重点</label><input id="fFocus" placeholder="本次只练一个核心问题"></div>
       <div class="field full"><label>复盘备注</label><textarea id="fNotes" placeholder="最好动作、最大损失、下一次唯一训练点"></textarea></div>
@@ -231,6 +202,7 @@ function currentTrackRecord(){
 function calculateRecordPercent(){
  const best=Number($("fBest").value),record=Number($("fTrackRecord").value);
  $("fPercent").value=(best>0&&record>0)?(record/best*100).toFixed(3):""
+ $("fPercent").placeholder=record>0?"自动计算":"尚未配置该赛道/车型/组别纪录"
 }
 function autofillTrackRecord(){
  const record=currentTrackRecord();
@@ -275,7 +247,6 @@ async function loadTrackRecords(){
  const {data,error}=await client.from("track_records").select("*").order("track").order("vehicle_type").order("class_variant");
  if(error)throw error;
  trackRecords=data||[];
- renderTrackRecords();
  autofillTrackRecord()
 }
 async function loadSessions(){
@@ -369,69 +340,6 @@ function renderComparison(){
  function delta(v,b){if(v==null||b==null)return"—";const d=Number(v)-Number(b),cls=d<0?"delta-good":d>0?"delta-bad":"";return `<span class="${cls}">${d>0?"+":""}${d.toFixed(3)} s</span>`}
  $("compareRows").innerHTML=selected.map((s,i)=>`<tr><td>${i===0?"基准 · ":""}${esc(sessionCode(s))}<br><span class="small">${esc(s.track)}</span></td><td>${pct(s.record_percent)}</td><td>${sec(s.best_lap)}</td><td>${i===0?"—":delta(s.best_lap,base.best_lap)}</td><td>${sec(s.average_lap)}</td><td>${i===0?"—":delta(s.average_lap,base.average_lap)}</td><td>${sec(s.best5_average)}</td><td>${sec(s.median_lap)}</td><td>${s.mistake_count??"—"}</td></tr>`).join("");
 }
-function renderTrackRecords(){
- $("recordRows").innerHTML=trackRecords.map(r=>`<tr>
-  <td><strong>${esc(r.track)}</strong></td>
-  <td>${esc(r.vehicle_type)}</td>
-  <td><span class="tag">${esc(r.class_variant)}</span></td>
-  <td><strong>${sec(r.record_lap)}</strong></td>
-  <td>${esc(r.record_date||"—")}</td>
-  <td>${esc([r.source_name,r.notes].filter(Boolean).join(" · ")||"—")}</td>
-  <td><button class="ghost" onclick="editTrackRecord('${r.id}')">编辑</button> <button class="ghost" onclick="useTrackRecord('${r.id}')">用于训练</button> <button class="danger" onclick="removeTrackRecord('${r.id}')">删除</button></td>
- </tr>`).join("");
- $("emptyRecords").classList.toggle("hidden",trackRecords.length>0)
-}
-function resetRecordForm(){
- $("recordForm").reset();
- $("rVariant").value="Spec"
-}
-function editTrackRecord(id){
- const r=trackRecords.find(x=>x.id===id);if(!r)return;
- $("rTrack").value=r.track;
- $("rVehicleType").value=r.vehicle_type;
- $("rVariant").value=r.class_variant;
- $("rLap").value=Number(r.record_lap).toFixed(3);
- $("rDate").value=r.record_date||"";
- $("rSource").value=r.source_name||"";
- $("rNotes").value=r.notes||"";
- location.hash="#records"
-}
-function useTrackRecord(id){
- const r=trackRecords.find(x=>x.id===id);if(!r)return;
- $("fTrack").value=r.track;
- $("fVehicleType").value=r.vehicle_type;
- $("fVariant").value=r.class_variant;
- $("fSessionNo").value="";
- setSuggestedSessionNo();
- autofillTrackRecord();
- location.hash="#add"
-}
-async function saveTrackRecord(ev){
- ev.preventDefault();
- const row={
-  user_id:currentUser.id,
-  track:$("rTrack").value.trim(),
-  vehicle_type:$("rVehicleType").value.trim(),
-  class_variant:$("rVariant").value,
-  record_lap:Number($("rLap").value),
-  record_date:$("rDate").value||null,
-  source_name:$("rSource").value.trim()||null,
-  notes:$("rNotes").value.trim()||null
- };
- const {error}=await client.from("track_records").upsert(row,{onConflict:"user_id,track,vehicle_type,class_variant"});
- if(error)return toast(error.message,true);
- toast("赛道纪录已保存，相关训练百分比已同步更新。");
- resetRecordForm();
- await loadTrackRecords();
- await loadSessions()
-}
-async function removeTrackRecord(id){
- if(!confirm("确认删除这条赛道纪录？历史训练会保留原有纪录快照。"))return;
- const {error}=await client.from("track_records").delete().eq("id",id);
- if(error)return toast(error.message,true);
- toast("赛道纪录已删除。");
- await loadTrackRecords()
-}
 function renderAll(){fillFilters();renderDashboard();renderSessions();renderComparison();drawTrend()}
 function selectDashboard(id){selectedSessionId=id;$("dashboardSession").value=id;renderDashboard();renderSessions();location.hash="#dashboard"}
 function toggleCompare(id,checked){if(checked){if(compareIds.size>=4){toast("最多对比4条记录。",true);renderSessions();return}compareIds.add(id)}else compareIds.delete(id);renderComparison()}
@@ -473,7 +381,6 @@ async function boot(session){
  if(currentUser){try{await detectSchema();if(!schemaReady)return;await loadTrackRecords();const n=await syncCoach();$("syncText").textContent=n?`已导入${n}条教练更新`:"云端数据已同步";await loadSessions()}catch(e){toast(e.message||String(e),true)}}
 }
 $("loginBtn").onclick=sendMagicLink;$("logoutBtn").onclick=logout;$("sessionForm").onsubmit=saveForm;$("exportBtn").onclick=exportJSON;
-$("recordForm").onsubmit=saveTrackRecord;$("resetRecordBtn").onclick=resetRecordForm;
 $("fBest").addEventListener("input",calculateRecordPercent);
 $("fLapTimes").addEventListener("input",()=>{
  const st=stats(parseTimes($("fLapTimes").value));
