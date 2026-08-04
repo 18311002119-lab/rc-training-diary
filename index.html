@@ -22,6 +22,12 @@ table{width:100%;border-collapse:collapse;font-size:.88rem}th,td{padding:10px 8p
 .tag{display:inline-block;padding:2px 7px;border-radius:999px;font-size:.72rem;font-weight:800;background:rgba(90,169,255,.12);color:#b7d9ff}.tag.coachsrc{background:rgba(66,211,146,.12);color:#b9f3d9}.note{padding:13px;border:1px solid rgba(255,189,89,.25);background:rgba(255,189,89,.07);color:#ffe2aa;border-radius:13px;font-size:.88rem}.info{padding:12px;border:1px solid rgba(90,169,255,.25);background:rgba(90,169,255,.07);color:#cfe5ff;border-radius:13px;font-size:.86rem}
 canvas{width:100%;height:300px;display:block}.empty{text-align:center;color:var(--muted);padding:28px}.toast{position:fixed;right:18px;bottom:18px;max-width:380px;padding:12px 15px;border-radius:12px;background:#1d2c3e;border:1px solid var(--line);box-shadow:0 12px 35px rgba(0,0,0,.35);z-index:10}
 .group-list{display:grid;gap:10px}.record-group{border:1px solid var(--line);border-radius:15px;background:rgba(255,255,255,.018);overflow:hidden}.record-group>summary{list-style:none;cursor:pointer;padding:13px 15px;display:flex;justify-content:space-between;align-items:center;gap:12px;font-weight:900;background:rgba(255,255,255,.025)}.record-group>summary::-webkit-details-marker{display:none}.record-group>summary:before{content:"▸";color:var(--green);transition:transform .16s ease}.record-group[open]>summary:before{transform:rotate(90deg)}.group-title{flex:1}.group-meta{color:var(--muted);font-size:.8rem;font-weight:600}.group-body{padding:0 12px 12px}.group-body table{margin-top:4px}.view-switch{display:flex;gap:6px;flex-wrap:wrap}.view-switch button.active{background:var(--green);color:#062117}.view-switch button:not(.active){background:#25364b;color:var(--text)}.compare-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.compare-card{border:1px solid var(--line);border-radius:15px;padding:14px;background:rgba(255,255,255,.025)}.compare-card h3{margin:0 0 8px;font-size:1rem}.delta-good{color:var(--green)}.delta-bad{color:var(--red)}
+
+.record-form-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:11px}
+.record-form-grid .wide{grid-column:span 2}
+.readonly{opacity:.8;cursor:not-allowed}
+@media(max-width:900px){.record-form-grid{grid-template-columns:1fr 1fr}}
+@media(max-width:520px){.record-form-grid{grid-template-columns:1fr}.record-form-grid .wide{grid-column:auto}}
 footer{text-align:center;color:var(--muted);font-size:.8rem;margin-top:25px}
 @media(max-width:1020px){.metrics{grid-template-columns:repeat(3,1fr)}.two{grid-template-columns:1fr}.compare-grid{grid-template-columns:1fr 1fr}}@media(max-width:650px){.metrics,.formgrid{grid-template-columns:1fr 1fr}.full{grid-column:1/-1}.hero{padding:23px 18px}.toolbar .field{min-width:100%}}@media(max-width:470px){.metrics,.formgrid,.compare-grid{grid-template-columns:1fr}.full{grid-column:auto}.authbox input{min-width:100%}}
 </style>
@@ -42,11 +48,11 @@ footer{text-align:center;color:var(--muted);font-size:.8rem;margin-top:25px}
 </header>
 
 <nav>
-<a href="#dashboard">仪表盘</a><a href="#trend">趋势</a><a href="#add">添加记录</a><a href="#sessions">训练记录</a><a href="#compare">记录对比</a><a href="#coach">教练判断</a>
+<a href="#dashboard">仪表盘</a><a href="#trend">趋势</a><a href="#records">赛道纪录表</a><a href="#add">添加记录</a><a href="#sessions">训练记录</a><a href="#compare">记录对比</a><a href="#coach">教练判断</a>
 </nav>
 
 <div id="loginHint" class="note">请先运行数据库脚本并通过邮箱登录。登录后只显示你自己的数据。</div>
-<div id="schemaWarning" class="note hidden">当前数据库尚未升级“赛道纪录百分比”字段。请在Supabase SQL Editor运行仓库中的 <code>upgrade_dashboard_v2.sql</code>。</div>
+<div id="schemaWarning" class="note hidden">数据库尚未升级到V7。请在Supabase SQL Editor运行 <code>upgrade_track_records_v7.sql</code>。</div>
 
 <main id="app" class="hidden">
 <section id="dashboard">
@@ -85,19 +91,49 @@ footer{text-align:center;color:var(--muted);font-size:.8rem;margin-top:25px}
   <div class="card"><canvas id="chart"></canvas></div>
 </section>
 
+<section id="records">
+  <div class="title">
+    <h2>赛道纪录表</h2>
+    <div class="small">唯一匹配：赛道＋车型＋Spec/Mod</div>
+  </div>
+  <form id="recordForm" class="card">
+    <div class="record-form-grid">
+      <div class="field"><label>赛道</label><input id="rTrack" required placeholder="例如 Rhein-Main"></div>
+      <div class="field"><label>车型</label><input id="rVehicleType" required placeholder="例如 1:8 Electric Buggy"></div>
+      <div class="field"><label>组别</label><select id="rVariant"><option value="Spec">Spec</option><option value="Mod">Mod</option></select></div>
+      <div class="field"><label>赛道纪录 / 秒</label><input id="rLap" type="number" step="0.001" min="0" required></div>
+      <div class="field"><label>纪录日期</label><input id="rDate" type="date"></div>
+      <div class="field"><label>来源</label><input id="rSource" placeholder="例如 VRC赛道排行榜"></div>
+      <div class="field wide"><label>备注</label><input id="rNotes" placeholder="可记录车种版本、规则或更新时间"></div>
+    </div>
+    <div class="actions">
+      <button type="submit">保存或更新纪录</button>
+      <button type="button" class="secondary" id="resetRecordBtn">清空</button>
+    </div>
+  </form>
+  <div class="card tablewrap" style="margin-top:10px">
+    <table>
+      <thead><tr><th>赛道</th><th>车型</th><th>组别</th><th>纪录</th><th>纪录日期</th><th>来源 / 备注</th><th>操作</th></tr></thead>
+      <tbody id="recordRows"></tbody>
+    </table>
+    <div id="emptyRecords" class="empty hidden">暂无赛道纪录。</div>
+  </div>
+</section>
+
 <section id="add">
-  <div class="title"><h2>添加训练记录</h2><div class="small">填写最快圈和赛道纪录后自动计算纪录百分比</div></div>
+  <div class="title"><h2>添加训练记录</h2><div class="small">赛道纪录从独立纪录表自动读取</div></div>
   <form id="sessionForm" class="card">
     <div class="formgrid">
       <div class="field"><label>日期</label><input id="fDate" type="date" required></div>
       <div class="field"><label>本日该赛道/组别第几次训练</label><input id="fSessionNo" type="number" min="1" placeholder="例如 3"></div>
       <div class="field"><label>赛道</label><input id="fTrack" value="Rhein-Main" required></div>
-      <div class="field"><label>组别</label><input id="fClass" value="1:8 Electric Buggy Spec" required></div>
+      <div class="field"><label>车型</label><input id="fVehicleType" value="1:8 Electric Buggy" required></div>
+      <div class="field"><label>组别</label><select id="fVariant"><option value="Spec">Spec</option><option value="Mod">Mod</option></select></div>
       <div class="field"><label>模式</label><select id="fMode"><option>Practice</option><option>Time Trial</option><option>Event</option><option>Multiplayer</option></select></div>
       <div class="field"><label>圈数</label><input id="fLaps" type="number" min="1"></div>
       <div class="field"><label>重大失误数</label><input id="fMistakes" type="number" min="0"></div>
       <div class="field"><label>最快圈 / 秒</label><input id="fBest" type="number" step="0.001" min="0"></div>
-      <div class="field"><label>赛道纪录 / 秒</label><input id="fTrackRecord" type="number" step="0.001" min="0" placeholder="同赛道/组别已有数据时自动带出"></div>
+      <div class="field"><label>赛道纪录 / 秒</label><input id="fTrackRecord" class="readonly" type="number" step="0.001" min="0" placeholder="请先在赛道纪录表添加" readonly><input id="fTrackRecordId" type="hidden"></div>
       <div class="field"><label>相对赛道纪录 / %</label><input id="fPercent" type="number" step="0.001" min="0" max="200" placeholder="自动计算" readonly></div>
       <div class="field"><label>平均圈 / 秒</label><input id="fAvg" type="number" step="0.001" min="0"></div>
       <div class="field"><label>主观状态 1～5</label><input id="fMood" type="number" min="1" max="5"></div>
@@ -155,7 +191,7 @@ footer{text-align:center;color:var(--muted);font-size:.8rem;margin-top:25px}
 <script>
 const cfg=window.RC_COACH_CONFIG;
 const client=window.supabase.createClient(cfg.supabaseUrl,cfg.supabasePublishableKey,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
-let currentUser=null,sessions=[],selectedSessionId=null,compareIds=new Set(),supportsPercent=true,sessionGroupMode="day";
+let currentUser=null,sessions=[],trackRecords=[],selectedSessionId=null,compareIds=new Set(),schemaReady=true,sessionGroupMode="day";
 const $=id=>document.getElementById(id);
 function toast(msg,bad=false){const el=$("toast");el.textContent=msg;el.style.borderColor=bad?"var(--red)":"var(--green)";el.classList.remove("hidden");setTimeout(()=>el.classList.add("hidden"),4000)}
 function sec(v){return v===null||v===undefined||v===""?"—":Number(v).toFixed(3)+" s"}
@@ -164,61 +200,95 @@ function esc(v){return String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&l
 function parseTimes(raw){return raw.split(/[\s,，;；]+/).map(Number).filter(v=>Number.isFinite(v)&&v>0)}
 function stats(arr){if(!arr.length)return{};const s=[...arr].sort((a,b)=>a-b),avg=arr.reduce((a,b)=>a+b,0)/arr.length;const mid=s.length%2?s[(s.length-1)/2]:(s[s.length/2-1]+s[s.length/2])/2;return{best:s[0],avg,median:mid,best5:s.length>=5?s.slice(0,5).reduce((a,b)=>a+b,0)/5:null}}
 function round3(v){return Math.round((Number(v)+Number.EPSILON)*1000)/1000}
-function matchingTrackSessions(){
- const track=$("fTrack").value.trim(),className=$("fClass").value.trim();
- return sessions.filter(s=>s.track===track&&s.class_name===className)
+function normalizeVariant(v){
+ const x=String(v??"").trim().toLowerCase();
+ return x==="mod"||x==="modified"?"Mod":"Spec"
 }
-function findKnownTrackRecord(){
- const direct=matchingTrackSessions().map(s=>Number(s.track_record_lap)).filter(v=>Number.isFinite(v)&&v>0);
- if(direct.length)return Math.min(...direct);
- const inferred=matchingTrackSessions()
-  .filter(s=>Number(s.best_lap)>0&&Number(s.record_percent)>0)
-  .map(s=>Number(s.best_lap)*Number(s.record_percent)/100)
-  .filter(v=>Number.isFinite(v)&&v>0);
- return inferred.length?Math.min(...inferred):null
+function parseClassName(name){
+ const raw=String(name??"").trim();
+ const m=raw.match(/\s+(Spec|Mod|Modified)$/i);
+ const variant=m?normalizeVariant(m[1]):"Spec";
+ const vehicle=m?raw.slice(0,m.index).trim():raw;
+ return{vehicle_type:vehicle||"未分类车型",class_variant:variant}
+}
+function vehicleOf(s){return s.vehicle_type||parseClassName(s.class_name).vehicle_type}
+function variantOf(s){return s.class_variant||parseClassName(s.class_name).class_variant}
+function classLabel(vehicle,variant){return `${String(vehicle).trim()} ${normalizeVariant(variant)}`}
+function sessionClassLabel(s){return classLabel(vehicleOf(s),variantOf(s))}
+function normalizeSessionPayload(row){
+ const parsed=parseClassName(row.class_name);
+ const vehicle=row.vehicle_type||parsed.vehicle_type;
+ const variant=normalizeVariant(row.class_variant||parsed.class_variant);
+ return{...row,vehicle_type:vehicle,class_variant:variant,class_name:classLabel(vehicle,variant)}
+}
+function findTrackRecord(track,vehicle,variant){
+ const t=String(track??"").trim(),v=String(vehicle??"").trim(),g=normalizeVariant(variant);
+ return trackRecords.find(r=>r.track===t&&r.vehicle_type===v&&r.class_variant===g)||null
+}
+function currentTrackRecord(){
+ return findTrackRecord($("fTrack").value,$("fVehicleType").value,$("fVariant").value)
 }
 function calculateRecordPercent(){
  const best=Number($("fBest").value),record=Number($("fTrackRecord").value);
  $("fPercent").value=(best>0&&record>0)?(record/best*100).toFixed(3):""
 }
-function autofillTrackRecord(force=false){
- if(force)$("fTrackRecord").value="";
- if(!$("fTrackRecord").value){
-  const record=findKnownTrackRecord();
-  if(record)$("fTrackRecord").value=round3(record).toFixed(3)
- }
+function autofillTrackRecord(){
+ const record=currentTrackRecord();
+ $("fTrackRecordId").value=record?.id||"";
+ $("fTrackRecord").value=record?Number(record.record_lap).toFixed(3):"";
  calculateRecordPercent()
 }
 
-function trackKey(s){return `${s.track}||${s.class_name}`}
+
+function trackKey(s){return `${s.track}||${vehicleOf(s)}||${variantOf(s)}`}
 function sessionCode(s){return s.daily_session_no?`${s.session_date}-${s.daily_session_no}`:s.session_date}
-function sessionName(s){return `${sessionCode(s)} · ${s.track} · ${s.class_name}${s.lap_count?` · ${s.lap_count}圈`:""}`}
-function nextSessionNo(date,track,className){
+function sessionName(s){return `${sessionCode(s)} · ${s.track} · ${sessionClassLabel(s)}${s.lap_count?` · ${s.lap_count}圈`:""}`}
+function nextSessionNo(date,track,vehicle,variant){
  const nums=sessions
-   .filter(s=>s.session_date===date&&s.track===track&&s.class_name===className&&s.daily_session_no!=null)
+   .filter(s=>s.session_date===date&&s.track===track&&vehicleOf(s)===vehicle&&variantOf(s)===variant&&s.daily_session_no!=null)
    .map(s=>Number(s.daily_session_no))
    .filter(Number.isFinite);
  return nums.length?Math.max(...nums)+1:1
 }
 function setSuggestedSessionNo(){
- const date=$("fDate").value,track=$("fTrack").value.trim(),className=$("fClass").value.trim();
- if(date&&track&&className&&!$("fSessionNo").value)$("fSessionNo").value=nextSessionNo(date,track,className)
+ const date=$("fDate").value,track=$("fTrack").value.trim(),vehicle=$("fVehicleType").value.trim(),variant=$("fVariant").value;
+ if(date&&track&&vehicle&&!$("fSessionNo").value)$("fSessionNo").value=nextSessionNo(date,track,vehicle,variant)
 }
 async function sendMagicLink(){const email=$("loginEmail").value.trim();if(!email)return toast("请先输入邮箱。",true);const {error}=await client.auth.signInWithOtp({email,options:{emailRedirectTo:location.href.split("#")[0].split("?")[0]}});if(error)return toast(error.message,true);toast("登录邮件已发送。")}
 async function logout(){await client.auth.signOut();location.reload()}
-async function detectSchema(){const {error}=await client.from("training_sessions").select("record_percent,daily_session_no,track_record_lap").limit(1);supportsPercent=!error;$("schemaWarning").classList.toggle("hidden",supportsPercent)}
+async function detectSchema(){
+ const a=await client.from("training_sessions").select("record_percent,daily_session_no,track_record_lap,track_record_id,vehicle_type,class_variant").limit(1);
+ const b=await client.from("track_records").select("id,track,vehicle_type,class_variant,record_lap").limit(1);
+ schemaReady=!a.error&&!b.error;
+ $("schemaWarning").classList.toggle("hidden",schemaReady)
+}
 async function syncCoach(){
  const res=await fetch("./coach_updates.json?ts="+Date.now());if(!res.ok)throw new Error("无法读取教练更新");
  const updates=await res.json();if(!updates.length)return 0;
  const ids=updates.map(x=>x.external_id),{data:existing,error:e1}=await client.from("training_sessions").select("external_id").in("external_id",ids);
  if(e1)throw e1;const have=new Set((existing||[]).map(x=>x.external_id));
- let missing=updates.filter(x=>!have.has(x.external_id)).map(x=>({...x,user_id:currentUser.id}));
- if(!supportsPercent)missing=missing.map(({record_percent,daily_session_no,track_record_lap,...rest})=>rest);
+ let missing=updates.filter(x=>!have.has(x.external_id)).map(x=>normalizeSessionPayload({...x,user_id:currentUser.id}));
+ if(!schemaReady)missing=missing.map(({record_percent,daily_session_no,track_record_lap,track_record_id,vehicle_type,class_variant,...rest})=>rest);
  if(!missing.length)return 0;const {error}=await client.from("training_sessions").insert(missing);if(error)throw error;return missing.length;
 }
-async function loadSessions(){const {data,error}=await client.from("training_sessions").select("*").order("session_date",{ascending:false}).order("daily_session_no",{ascending:false}).order("created_at",{ascending:false});if(error)throw error;sessions=data||[];if(!selectedSessionId&&sessions.length)selectedSessionId=sessions[0].id;renderAll();setSuggestedSessionNo();autofillTrackRecord()}
+async function loadTrackRecords(){
+ const {data,error}=await client.from("track_records").select("*").order("track").order("vehicle_type").order("class_variant");
+ if(error)throw error;
+ trackRecords=data||[];
+ renderTrackRecords();
+ autofillTrackRecord()
+}
+async function loadSessions(){
+ const {data,error}=await client.from("training_sessions").select("*").order("session_date",{ascending:false}).order("daily_session_no",{ascending:false}).order("created_at",{ascending:false});
+ if(error)throw error;
+ sessions=(data||[]).map(normalizeSessionPayload);
+ if(!selectedSessionId&&sessions.length)selectedSessionId=sessions[0].id;
+ renderAll();
+ setSuggestedSessionNo();
+ autofillTrackRecord()
+}
 function fillFilters(){
- const tracks=[...new Set(sessions.map(s=>s.track))].sort();
+ const tracks=[...new Set([...sessions.map(s=>s.track),...trackRecords.map(r=>r.track)])].sort();
  const opts='<option value="">全部赛道</option>'+tracks.map(t=>`<option value="${esc(t)}">${esc(t)}</option>`).join("");
  const old1=$("sessionTrackFilter").value,old2=$("trendTrackFilter").value;
  $("sessionTrackFilter").innerHTML=opts;$("trendTrackFilter").innerHTML=opts;
@@ -228,12 +298,12 @@ function fillFilters(){
 }
 function renderDashboard(){
  const s=sessions.find(x=>x.id===selectedSessionId)||sessions[0];if(!s)return;
- const sameTrackClass=sessions.filter(x=>x.track===s.track&&x.class_name===s.class_name);
+ const sameTrackClass=sessions.filter(x=>trackKey(x)===trackKey(s));
  const trackP=sameTrackClass.map(x=>Number(x.record_percent)).filter(Number.isFinite);
  $("mBestPercent").textContent=trackP.length?pct(Math.max(...trackP)):"—";
  $("mPercentLabel").textContent=`${s.track} 最佳纪录比例`;
  $("mPercentNote").textContent="";
- $("mBest").textContent=sec(s.best_lap);$("mBestNote").textContent=`${s.track} · ${s.class_name}${s.record_percent!=null?` · ${pct(s.record_percent)}纪录`:""}`;
+ $("mBest").textContent=sec(s.best_lap);$("mBestNote").textContent=`${s.track} · ${sessionClassLabel(s)}${s.record_percent!=null?` · ${pct(s.record_percent)}纪录`:""}`;
  $("mAvg").textContent=sec(s.average_lap);$("mAvgNote").textContent=s.lap_count?`${s.lap_count}圈训练`:"未记录圈数";
  if(s.best5_average!=null){$("mStable").textContent=sec(s.best5_average);$("mStableNote").textContent=`中位数 ${sec(s.median_lap)}`}
  else if(s.median_lap!=null){$("mStable").textContent=sec(s.median_lap);$("mStableNote").textContent="中位数"}
@@ -246,7 +316,7 @@ function sessionRowHTML(s){
  return `<tr class="${s.id===selectedSessionId?"selected":""}">
  <td><input type="checkbox" ${compareIds.has(s.id)?"checked":""} onchange="toggleCompare('${s.id}',this.checked)"></td>
  <td><strong>${esc(sessionCode(s))}</strong></td>
- <td><strong>${esc(s.track)}</strong><br><span class="small">${esc(s.class_name)} · ${esc(s.mode)}</span></td>
+ <td><strong>${esc(s.track)}</strong><br><span class="small">${esc(sessionClassLabel(s))} · ${esc(s.mode)}</span></td>
  <td>${s.lap_count??"—"}</td><td>${sec(s.best_lap)}</td><td>${sec(s.average_lap)}</td><td>${pct(s.record_percent)}</td><td>${s.mistake_count??"—"}</td>
  <td><span class="tag ${s.source==="coach-import"?"coachsrc":""}">${s.source==="coach-import"?"AI教练":"网页"}</span></td>
  <td><button class="ghost" onclick="selectDashboard('${s.id}')">仪表盘</button> <button class="danger" onclick="removeSession('${s.id}')">删除</button></td></tr>`
@@ -260,7 +330,7 @@ function groupSummary(rows){
  const p=rows.map(x=>Number(x.record_percent)).filter(Number.isFinite);
  const best=p.length?`最佳 ${pct(Math.max(...p))}`:"无纪录%";
  const laps=rows.reduce((a,s)=>a+(Number(s.lap_count)||0),0);
- const tracks=new Set(rows.map(s=>`${s.track}||${s.class_name}`)).size;
+ const tracks=new Set(rows.map(s=>trackKey(s))).size;
  return`${rows.length}次训练 · ${tracks}个赛道/组别 · ${laps}圈 · ${best}`
 }
 function groupedTableHTML(rows){
@@ -295,9 +365,72 @@ function renderComparison(){
  const base=selected[0],same=selected.every(s=>trackKey(s)===trackKey(base));
  $("compareWarning").classList.toggle("hidden",same);
  if(!same)$("compareWarning").textContent="所选记录来自不同赛道或组别：秒数差不代表驾驶水平差异，请优先比较纪录百分比。";
- $("compareCards").innerHTML=selected.map((s,i)=>`<div class="compare-card"><h3>${i===0?"基准 · ":""}${esc(sessionCode(s))}</h3><div class="small">${esc(s.track)} · ${esc(s.class_name)}</div><div style="margin-top:8px">纪录：<strong class="green">${pct(s.record_percent)}</strong></div><div>PB：<strong>${sec(s.best_lap)}</strong></div><div>平均：<strong>${sec(s.average_lap)}</strong></div></div>`).join("");
+ $("compareCards").innerHTML=selected.map((s,i)=>`<div class="compare-card"><h3>${i===0?"基准 · ":""}${esc(sessionCode(s))}</h3><div class="small">${esc(s.track)} · ${esc(sessionClassLabel(s))}</div><div style="margin-top:8px">纪录：<strong class="green">${pct(s.record_percent)}</strong></div><div>PB：<strong>${sec(s.best_lap)}</strong></div><div>平均：<strong>${sec(s.average_lap)}</strong></div></div>`).join("");
  function delta(v,b){if(v==null||b==null)return"—";const d=Number(v)-Number(b),cls=d<0?"delta-good":d>0?"delta-bad":"";return `<span class="${cls}">${d>0?"+":""}${d.toFixed(3)} s</span>`}
  $("compareRows").innerHTML=selected.map((s,i)=>`<tr><td>${i===0?"基准 · ":""}${esc(sessionCode(s))}<br><span class="small">${esc(s.track)}</span></td><td>${pct(s.record_percent)}</td><td>${sec(s.best_lap)}</td><td>${i===0?"—":delta(s.best_lap,base.best_lap)}</td><td>${sec(s.average_lap)}</td><td>${i===0?"—":delta(s.average_lap,base.average_lap)}</td><td>${sec(s.best5_average)}</td><td>${sec(s.median_lap)}</td><td>${s.mistake_count??"—"}</td></tr>`).join("");
+}
+function renderTrackRecords(){
+ $("recordRows").innerHTML=trackRecords.map(r=>`<tr>
+  <td><strong>${esc(r.track)}</strong></td>
+  <td>${esc(r.vehicle_type)}</td>
+  <td><span class="tag">${esc(r.class_variant)}</span></td>
+  <td><strong>${sec(r.record_lap)}</strong></td>
+  <td>${esc(r.record_date||"—")}</td>
+  <td>${esc([r.source_name,r.notes].filter(Boolean).join(" · ")||"—")}</td>
+  <td><button class="ghost" onclick="editTrackRecord('${r.id}')">编辑</button> <button class="ghost" onclick="useTrackRecord('${r.id}')">用于训练</button> <button class="danger" onclick="removeTrackRecord('${r.id}')">删除</button></td>
+ </tr>`).join("");
+ $("emptyRecords").classList.toggle("hidden",trackRecords.length>0)
+}
+function resetRecordForm(){
+ $("recordForm").reset();
+ $("rVariant").value="Spec"
+}
+function editTrackRecord(id){
+ const r=trackRecords.find(x=>x.id===id);if(!r)return;
+ $("rTrack").value=r.track;
+ $("rVehicleType").value=r.vehicle_type;
+ $("rVariant").value=r.class_variant;
+ $("rLap").value=Number(r.record_lap).toFixed(3);
+ $("rDate").value=r.record_date||"";
+ $("rSource").value=r.source_name||"";
+ $("rNotes").value=r.notes||"";
+ location.hash="#records"
+}
+function useTrackRecord(id){
+ const r=trackRecords.find(x=>x.id===id);if(!r)return;
+ $("fTrack").value=r.track;
+ $("fVehicleType").value=r.vehicle_type;
+ $("fVariant").value=r.class_variant;
+ $("fSessionNo").value="";
+ setSuggestedSessionNo();
+ autofillTrackRecord();
+ location.hash="#add"
+}
+async function saveTrackRecord(ev){
+ ev.preventDefault();
+ const row={
+  user_id:currentUser.id,
+  track:$("rTrack").value.trim(),
+  vehicle_type:$("rVehicleType").value.trim(),
+  class_variant:$("rVariant").value,
+  record_lap:Number($("rLap").value),
+  record_date:$("rDate").value||null,
+  source_name:$("rSource").value.trim()||null,
+  notes:$("rNotes").value.trim()||null
+ };
+ const {error}=await client.from("track_records").upsert(row,{onConflict:"user_id,track,vehicle_type,class_variant"});
+ if(error)return toast(error.message,true);
+ toast("赛道纪录已保存，相关训练百分比已同步更新。");
+ resetRecordForm();
+ await loadTrackRecords();
+ await loadSessions()
+}
+async function removeTrackRecord(id){
+ if(!confirm("确认删除这条赛道纪录？历史训练会保留原有纪录快照。"))return;
+ const {error}=await client.from("track_records").delete().eq("id",id);
+ if(error)return toast(error.message,true);
+ toast("赛道纪录已删除。");
+ await loadTrackRecords()
 }
 function renderAll(){fillFilters();renderDashboard();renderSessions();renderComparison();drawTrend()}
 function selectDashboard(id){selectedSessionId=id;$("dashboardSession").value=id;renderDashboard();renderSessions();location.hash="#dashboard"}
@@ -305,13 +438,14 @@ function toggleCompare(id,checked){if(checked){if(compareIds.size>=4){toast("最
 async function removeSession(id){if(!confirm("确认删除这条训练记录？"))return;const {error}=await client.from("training_sessions").delete().eq("id",id);if(error)return toast(error.message,true);compareIds.delete(id);if(selectedSessionId===id)selectedSessionId=null;toast("已删除。");await loadSessions()}
 async function saveForm(ev){
  ev.preventDefault();const times=parseTimes($("fLapTimes").value),st=stats(times);
- const row={user_id:currentUser.id,session_date:$("fDate").value,daily_session_no:$("fSessionNo").value?Number($("fSessionNo").value):null,simulator:"VRC Pro",track:$("fTrack").value.trim(),class_name:$("fClass").value.trim(),mode:$("fMode").value,
- lap_count:$("fLaps").value?Number($("fLaps").value):(times.length||null),best_lap:$("fBest").value?Number($("fBest").value):(st.best??null),track_record_lap:$("fTrackRecord").value?Number($("fTrackRecord").value):null,average_lap:$("fAvg").value?Number($("fAvg").value):(st.avg??null),
+ const vehicle=$("fVehicleType").value.trim(),variant=$("fVariant").value;
+ const row={user_id:currentUser.id,session_date:$("fDate").value,daily_session_no:$("fSessionNo").value?Number($("fSessionNo").value):null,simulator:"VRC Pro",track:$("fTrack").value.trim(),vehicle_type:vehicle,class_variant:variant,class_name:classLabel(vehicle,variant),mode:$("fMode").value,
+ lap_count:$("fLaps").value?Number($("fLaps").value):(times.length||null),best_lap:$("fBest").value?Number($("fBest").value):(st.best??null),track_record_id:$("fTrackRecordId").value||null,track_record_lap:$("fTrackRecord").value?Number($("fTrackRecord").value):null,average_lap:$("fAvg").value?Number($("fAvg").value):(st.avg??null),
  median_lap:st.median??null,best5_average:st.best5??null,mistake_count:$("fMistakes").value===""?null:Number($("fMistakes").value),lap_times:times.length?times:null,
  focus:$("fFocus").value.trim()||null,notes:$("fNotes").value.trim()||null,vehicle_setup:$("fVehicle").value.trim()||null,controller_setup:$("fController").value.trim()||null,
  mood:$("fMood").value?Number($("fMood").value):null,source:"user"};
- if(supportsPercent&&$("fPercent").value)row.record_percent=Number($("fPercent").value);
- const {error}=await client.from("training_sessions").insert(row);if(error)return toast(error.message,true);toast("训练记录已保存。");ev.target.reset();$("fDate").value=new Date().toISOString().slice(0,10);$("fTrack").value="Rhein-Main";$("fClass").value="1:8 Electric Buggy Spec";await loadSessions();setSuggestedSessionNo();autofillTrackRecord(true);
+ if(schemaReady&&$("fPercent").value)row.record_percent=Number($("fPercent").value);
+ const {error}=await client.from("training_sessions").insert(row);if(error)return toast(error.message,true);toast("训练记录已保存。");ev.target.reset();$("fDate").value=new Date().toISOString().slice(0,10);$("fTrack").value="Rhein-Main";$("fVehicleType").value="1:8 Electric Buggy";$("fVariant").value="Spec";await loadSessions();setSuggestedSessionNo();autofillTrackRecord();
 }
 function drawTrend(){
  const track=$("trendTrackFilter").value,c=$("chart"),ctx=c.getContext("2d"),ratio=devicePixelRatio||1,W=c.clientWidth,H=300;c.width=W*ratio;c.height=H*ratio;ctx.scale(ratio,ratio);ctx.clearRect(0,0,W,H);
@@ -336,19 +470,19 @@ function drawTrend(){
 function exportJSON(){const blob=new Blob([JSON.stringify(sessions,null,2)],{type:"application/json"}),u=URL.createObjectURL(blob),a=document.createElement("a");a.href=u;a.download="rc-training-sessions.json";a.click();URL.revokeObjectURL(u)}
 async function boot(session){
  currentUser=session?.user||null;$("app").classList.toggle("hidden",!currentUser);$("loginHint").classList.toggle("hidden",!!currentUser);$("logoutBtn").classList.toggle("hidden",!currentUser);$("loginBtn").classList.toggle("hidden",!!currentUser);$("loginEmail").classList.toggle("hidden",!!currentUser);$("authStatus").textContent=currentUser?"已登录："+currentUser.email:"尚未登录";
- if(currentUser){try{await detectSchema();const n=await syncCoach();$("syncText").textContent=n?`已导入${n}条教练更新`:"云端数据已同步";await loadSessions()}catch(e){toast(e.message||String(e),true)}}
+ if(currentUser){try{await detectSchema();if(!schemaReady)return;await loadTrackRecords();const n=await syncCoach();$("syncText").textContent=n?`已导入${n}条教练更新`:"云端数据已同步";await loadSessions()}catch(e){toast(e.message||String(e),true)}}
 }
 $("loginBtn").onclick=sendMagicLink;$("logoutBtn").onclick=logout;$("sessionForm").onsubmit=saveForm;$("exportBtn").onclick=exportJSON;
+$("recordForm").onsubmit=saveTrackRecord;$("resetRecordBtn").onclick=resetRecordForm;
 $("fBest").addEventListener("input",calculateRecordPercent);
-$("fTrackRecord").addEventListener("input",calculateRecordPercent);
 $("fLapTimes").addEventListener("input",()=>{
  const st=stats(parseTimes($("fLapTimes").value));
  if(st.best!=null)$("fBest").value=round3(st.best).toFixed(3);
  calculateRecordPercent()
 });
-["fTrack","fClass"].forEach(id=>{
- $(id).addEventListener("change",()=>autofillTrackRecord(true));
- $(id).addEventListener("blur",()=>autofillTrackRecord(true))
+["fTrack","fVehicleType","fVariant"].forEach(id=>{
+ $(id).addEventListener("change",autofillTrackRecord);
+ $(id).addEventListener("blur",autofillTrackRecord)
 });
 $("dashboardSession").onchange=e=>{selectedSessionId=e.target.value;renderDashboard();renderSessions()};
 $("sessionTrackFilter").onchange=renderSessions;
@@ -362,7 +496,7 @@ $("groupModeButtons").addEventListener("click",e=>{
 $("expandAllBtn").onclick=()=>document.querySelectorAll("#groupedSessions details").forEach(d=>d.open=true);
 $("collapseAllBtn").onclick=()=>document.querySelectorAll("#groupedSessions details").forEach(d=>d.open=false);
 $("fDate").value=new Date().toISOString().slice(0,10);
-["fDate","fTrack","fClass"].forEach(id=>{
+["fDate","fTrack","fVehicleType","fVariant"].forEach(id=>{
  $(""+id).addEventListener("change",()=>{$("fSessionNo").value="";setSuggestedSessionNo()});
  $(""+id).addEventListener("input",()=>{$("fSessionNo").value="";setSuggestedSessionNo()});
 });
