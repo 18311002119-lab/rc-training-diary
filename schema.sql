@@ -5,6 +5,7 @@ create table if not exists public.training_sessions (
   user_id uuid not null default auth.uid() references auth.users(id) on delete cascade,
   external_id text,
   session_date date not null default current_date,
+  daily_session_no integer check (daily_session_no is null or daily_session_no > 0),
   simulator text not null default 'VRC Pro',
   track text not null,
   class_name text not null,
@@ -14,6 +15,7 @@ create table if not exists public.training_sessions (
   average_lap numeric(8,3) check (average_lap is null or average_lap > 0),
   median_lap numeric(8,3) check (median_lap is null or median_lap > 0),
   best5_average numeric(8,3) check (best5_average is null or best5_average > 0),
+  record_percent numeric(6,3) check (record_percent is null or (record_percent >= 0 and record_percent <= 200)),
   mistake_count integer check (mistake_count is null or mistake_count >= 0),
   lap_times jsonb,
   focus text,
@@ -32,6 +34,10 @@ create table if not exists public.training_sessions (
 create unique index if not exists training_sessions_user_external_unique
 on public.training_sessions(user_id, external_id)
 where external_id is not null;
+
+create unique index if not exists training_sessions_user_date_no_unique
+on public.training_sessions(user_id, session_date, daily_session_no)
+where daily_session_no is not null;
 
 alter table public.training_sessions enable row level security;
 

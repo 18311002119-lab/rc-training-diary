@@ -28,7 +28,9 @@
     "notes": "逐圈截图记录。第6圈43.126秒、第9圈42.166秒为两次主要慢圈；去除这两圈后，其余8圈平均约39.202秒。",
     "coach_note": "这组的核心不是PB，而是已经出现相当好的主体节奏。两次事故把10圈平均从约39.20秒拉高到39.89秒，说明当前最划算的提升来自减少事故，而不是继续增加攻击性。",
     "next_goal": "完成10圈平均低于39.5秒，42秒以上事故圈不超过1次。",
-    "source": "coach-import"
+    "source": "coach-import",
+    "record_percent": 88.379,
+    "daily_session_no": 3
   },
   {
     "external_id": "coach-20260804-rheinmain-16laps",
@@ -48,7 +50,9 @@
     "notes": "确认PB为37.192秒，达到约90%赛道记录速度；该组失误偏多。",
     "coach_note": "快圈能力增长快于稳定性。37.192秒证明路线和动作上限已经存在，40.311秒平均说明事故圈仍在显著吞噬总成绩。",
     "next_goal": "16圈平均低于39.8秒，重大失误不超过1次。",
-    "source": "coach-import"
+    "source": "coach-import",
+    "record_percent": 90.0,
+    "daily_session_no": 2
   },
   {
     "external_id": "coach-20260804-rheinmain-15laps",
@@ -68,7 +72,8 @@
     "notes": "最快疑似约37.3秒，但Practice退出后没有保存，未作为确认PB。",
     "coach_note": "首次确认15圈平均进入40秒以内，说明稳定比赛节奏已经开始形成。",
     "next_goal": "维持40秒以内平均，并记录逐圈数据定位最慢3圈。",
-    "source": "coach-import"
+    "source": "coach-import",
+    "daily_session_no": 1
   },
   {
     "external_id": "coach-20260804-rally-baseline",
