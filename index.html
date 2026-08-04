@@ -35,6 +35,18 @@ canvas{width:100%;height:300px;display:block}.empty{text-align:center;color:var(
 .rank-metric{padding:8px;border:1px solid rgba(255,255,255,.07);border-radius:10px;background:rgba(0,0,0,.12)}
 .rank-metric .label{font-size:.72rem}
 .rank-metric strong{display:block;margin-top:2px;color:var(--rank-color);font-size:1rem;white-space:nowrap}
+.ranking-info{margin-top:10px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.ranking-legend{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.rank-legend-item{display:inline-flex;align-items:center;gap:6px;color:var(--muted);font-size:.78rem}
+.rank-dot{width:9px;height:9px;border-radius:50%;display:inline-block}
+.rank-dot.first{background:var(--purple)}.rank-dot.second{background:var(--green)}.rank-dot.last{background:var(--red)}
+.score-cell{position:relative;transition:background .15s ease,color .15s ease,box-shadow .15s ease}
+.score-cell .score-main{font-weight:900;white-space:nowrap;color:inherit}
+.score-cell .score-rank{display:inline-block;margin-left:6px;padding:2px 5px;border-radius:999px;font-size:.62rem;font-weight:900;line-height:1.2;color:inherit;background:rgba(0,0,0,.22);vertical-align:middle}
+.score-cell.rank-first{color:#e5c8ff;background:rgba(181,108,255,.16);box-shadow:inset 3px 0 0 var(--purple)}
+.score-cell.rank-second{color:#b9f3d9;background:rgba(66,211,146,.13);box-shadow:inset 3px 0 0 var(--green)}
+.score-cell.rank-last{color:#ffd0d0;background:rgba(255,107,107,.13);box-shadow:inset 3px 0 0 var(--red)}
+.score-cell.rank-first .score-main,.score-cell.rank-second .score-main,.score-cell.rank-last .score-main{color:inherit}
 
 .record-form-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:11px}
 .record-form-grid .wide{grid-column:span 2}
@@ -169,6 +181,7 @@ footer{text-align:center;color:var(--muted);font-size:.8rem;margin-top:25px}
     </div>
   </div>
   <div class="info">最多选择4条训练记录进行对比。</div>
+  <div id="rankingInfo" class="info ranking-info"></div>
   <div id="groupedSessions" class="group-list" style="margin-top:10px"></div>
   <div id="emptyRows" class="empty card hidden" style="margin-top:10px">暂无数据。</div>
 </section>
@@ -373,12 +386,76 @@ function renderDashboard(){
  $("coachText").innerHTML=s.coach_note?`<strong>${esc(s.coach_note)}</strong><div class="small" style="margin-top:8px">${esc(sessionName(s))}</div>`:"暂无教练评语。";
  $("goalText").textContent=s.next_goal||"未设置下一目标。";
 }
-function sessionRowHTML(s){
+function rankMap(rows,key,{higherBetter=false,grouped=false}={}){
+ const result=new Map();
+ const groups=new Map();
+ rows.forEach(s=>{
+   const value=Number(s[key]);
+   if(!Number.isFinite(value))return;
+   const groupKey=grouped?trackKey(s):"__all__";
+   if(!groups.has(groupKey))groups.set(groupKey,[]);
+   groups.get(groupKey).push({s,value})
+ });
+ groups.forEach(items=>{
+   const values=[...new Set(items.map(x=>x.value))].sort((a,b)=>higherBetter?b-a:a-b);
+   if(values.length<2)return;
+   const first=values[0];
+   const second=values[1];
+   const last=values[values.length-1];
+   items.forEach(({s,value})=>{
+     if(value===first)result.set(s.id,"rank-first");
+     else if(value===last)result.set(s.id,"rank-last");
+     else if(values.length>=3&&value===second)result.set(s.id,"rank-second")
+   })
+ });
+ return result
+}
+function visibleSessionRows(){
+ const filter=$("sessionTrackFilter").value;
+ return filter?sessions.filter(s=>s.track===filter):sessions
+}
+function buildRankingState(visibleRows){
+ const selected=[...compareIds].map(id=>sessions.find(s=>s.id===id)).filter(Boolean);
+ const rows=selected.length?selected:visibleRows;
+ return{
+   rows,
+   selected:Boolean(selected.length),
+   mixedTracks:new Set(rows.map(trackKey)).size>1,
+   pb:rankMap(rows,"best_lap",{grouped:true}),
+   avg:rankMap(rows,"average_lap",{grouped:true}),
+   record:rankMap(rows,"record_percent",{higherBetter:true})
+ }
+}
+function rankedScoreCellHTML(s,formatted,map,labels){
+ const cls=map.get(s.id)||"";
+ if(!cls)return `<td class="score-cell"><span class="score-main">${formatted}</span></td>`;
+ const label=cls==="rank-first"?labels[0]:cls==="rank-second"?labels[1]:labels[2];
+ return `<td class="score-cell ${cls}"><span class="score-main">${formatted}</span><span class="score-rank">${label}</span></td>`
+}
+function renderRankingInfo(state){
+ const scope=state.selected
+   ?`按已勾选的 ${state.rows.length} 条记录排名`
+   :`未勾选记录：自动按当前筛选出的 ${state.rows.length} 条记录排名`;
+ const note=state.mixedTracks
+   ?"PB和平均圈在相同赛道/车型/组别内排名；纪录%在当前范围内统一排名。"
+   :"PB、平均圈和纪录%均在当前范围内排名。";
+ $("rankingInfo").innerHTML=`<div><strong>${scope}</strong><div class="small">${note}</div></div>
+ <div class="ranking-legend">
+   <span class="rank-legend-item"><span class="rank-dot first"></span>第一：紫色</span>
+   <span class="rank-legend-item"><span class="rank-dot second"></span>第二：绿色</span>
+   <span class="rank-legend-item"><span class="rank-dot last"></span>最慢/最低：红色</span>
+ </div>`
+}
+function sessionRowHTML(s,ranking){
  return `<tr class="${s.id===selectedSessionId?"selected":""}">
  <td><input type="checkbox" ${compareIds.has(s.id)?"checked":""} onchange="toggleCompare('${s.id}',this.checked)"></td>
  <td><strong>${esc(sessionCode(s))}</strong></td>
  <td><strong>${esc(s.track)}</strong><br><span class="small">${esc(sessionClassLabel(s))} · ${esc(s.mode)}</span></td>
- <td>${s.lap_count??"—"}</td><td>${sec(s.best_lap)}</td><td>${sec(s.average_lap)}</td><td>${pct(s.record_percent)}</td><td>${s.mistake_count??"—"}</td>
+ <td>${s.lap_count??"—"}</td>
+ ${rankedScoreCellHTML(s,sec(s.best_lap),ranking.pb,["最快","第二","最慢"])}
+ ${rankedScoreCellHTML(s,sec(s.average_lap),ranking.avg,["最快","第二","最慢"])}
+ ${rankedScoreCellHTML(s,pct(s.record_percent),ranking.record,["最佳","第二","最低"])}
+ <td>${s.mistake_count??"—"}</td>
  <td><span class="tag ${s.source==="coach-import"?"coachsrc":""}">${s.source==="coach-import"?"AI教练":"网页"}</span></td>
  <td><button class="ghost" onclick="selectDashboard('${s.id}')">仪表盘</button> <button class="danger" onclick="removeSession('${s.id}')">删除</button></td></tr>`
 }
@@ -394,14 +471,15 @@ function groupSummary(rows){
  const tracks=new Set(rows.map(s=>trackKey(s))).size;
  return`${rows.length}次训练 · ${tracks}个赛道/组别 · ${laps}圈 · ${best}`
 }
-function groupedTableHTML(rows){
+function groupedTableHTML(rows,ranking){
  return `<div class="group-body"><div class="tablewrap"><table>
  <thead><tr><th>对比</th><th>训练编号</th><th>赛道 / 组别</th><th>圈数</th><th>PB</th><th>平均</th><th>纪录%</th><th>失误</th><th>来源</th><th>操作</th></tr></thead>
- <tbody>${rows.map(sessionRowHTML).join("")}</tbody></table></div></div>`
+ <tbody>${rows.map(s=>sessionRowHTML(s,ranking)).join("")}</tbody></table></div></div>`
 }
 function renderSessions(){
- const filter=$("sessionTrackFilter").value;
- const rows=filter?sessions.filter(s=>s.track===filter):sessions;
+ const rows=visibleSessionRows();
+ const ranking=buildRankingState(rows);
+ renderRankingInfo(ranking);
  $("emptyRows").classList.toggle("hidden",rows.length>0);
  document.querySelectorAll("#groupModeButtons button").forEach(b=>b.classList.toggle("active",b.dataset.group===sessionGroupMode));
  if(!rows.length){
@@ -417,7 +495,7 @@ function renderSessions(){
  $("groupedSessions").innerHTML=[...groups.entries()].map(([key,g],i)=>`
  <details class="record-group" ${i===0?"open":""}>
    <summary><span class="group-title">${esc(g.title)}</span><span class="group-meta">${esc(groupSummary(g.rows))}</span></summary>
-   ${groupedTableHTML(g.rows)}
+   ${groupedTableHTML(g.rows,ranking)}
  </details>`).join("");
 }
 function renderComparison(){
@@ -475,7 +553,14 @@ function selectDashboard(id){
  renderSessions();
  location.hash="#dashboard"
 }
-function toggleCompare(id,checked){if(checked){if(compareIds.size>=4){toast("最多对比4条记录。",true);renderSessions();return}compareIds.add(id)}else compareIds.delete(id);renderComparison()}
+function toggleCompare(id,checked){
+ if(checked){
+   if(compareIds.size>=4){toast("最多对比4条记录。",true);renderSessions();return}
+   compareIds.add(id)
+ }else compareIds.delete(id);
+ renderSessions();
+ renderComparison()
+}
 async function removeSession(id){if(!confirm("确认删除这条训练记录？"))return;const {error}=await client.from("training_sessions").delete().eq("id",id);if(error)return toast(error.message,true);compareIds.delete(id);if(selectedSessionId===id)selectedSessionId=null;toast("已删除。");await loadSessions()}
 async function saveForm(ev){
  ev.preventDefault();const times=parseTimes($("fLapTimes").value),st=stats(times);
