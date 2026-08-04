@@ -91,7 +91,7 @@ footer{text-align:center;color:var(--muted);font-size:.8rem;margin-top:25px}
   <form id="sessionForm" class="card">
     <div class="formgrid">
       <div class="field"><label>日期</label><input id="fDate" type="date" required></div>
-      <div class="field"><label>本日第几次训练</label><input id="fSessionNo" type="number" min="1" placeholder="例如 3"></div>
+      <div class="field"><label>本日该赛道/组别第几次训练</label><input id="fSessionNo" type="number" min="1" placeholder="例如 3"></div>
       <div class="field"><label>赛道</label><input id="fTrack" value="Rhein-Main" required></div>
       <div class="field"><label>组别</label><input id="fClass" value="1:8 Electric Buggy Spec" required></div>
       <div class="field"><label>模式</label><select id="fMode"><option>Practice</option><option>Time Trial</option><option>Event</option><option>Multiplayer</option></select></div>
@@ -158,8 +158,17 @@ function stats(arr){if(!arr.length)return{};const s=[...arr].sort((a,b)=>a-b),av
 function trackKey(s){return `${s.track}||${s.class_name}`}
 function sessionCode(s){return s.daily_session_no?`${s.session_date}-${s.daily_session_no}`:s.session_date}
 function sessionName(s){return `${sessionCode(s)} · ${s.track} · ${s.class_name}${s.lap_count?` · ${s.lap_count}圈`:""}`}
-function nextSessionNo(date){const nums=sessions.filter(s=>s.session_date===date&&s.daily_session_no!=null).map(s=>Number(s.daily_session_no)).filter(Number.isFinite);return nums.length?Math.max(...nums)+1:1}
-function setSuggestedSessionNo(){const date=$("fDate").value;if(date&&!$("fSessionNo").value)$("fSessionNo").value=nextSessionNo(date)}
+function nextSessionNo(date,track,className){
+ const nums=sessions
+   .filter(s=>s.session_date===date&&s.track===track&&s.class_name===className&&s.daily_session_no!=null)
+   .map(s=>Number(s.daily_session_no))
+   .filter(Number.isFinite);
+ return nums.length?Math.max(...nums)+1:1
+}
+function setSuggestedSessionNo(){
+ const date=$("fDate").value,track=$("fTrack").value.trim(),className=$("fClass").value.trim();
+ if(date&&track&&className&&!$("fSessionNo").value)$("fSessionNo").value=nextSessionNo(date,track,className)
+}
 async function sendMagicLink(){const email=$("loginEmail").value.trim();if(!email)return toast("请先输入邮箱。",true);const {error}=await client.auth.signInWithOtp({email,options:{emailRedirectTo:location.href.split("#")[0].split("?")[0]}});if(error)return toast(error.message,true);toast("登录邮件已发送。")}
 async function logout(){await client.auth.signOut();location.reload()}
 async function detectSchema(){const {error}=await client.from("training_sessions").select("record_percent,daily_session_no").limit(1);supportsPercent=!error;$("schemaWarning").classList.toggle("hidden",supportsPercent)}
@@ -261,7 +270,10 @@ $("loginBtn").onclick=sendMagicLink;$("logoutBtn").onclick=logout;$("sessionForm
 $("dashboardSession").onchange=e=>{selectedSessionId=e.target.value;renderDashboard();renderSessions()};
 $("sessionTrackFilter").onchange=renderSessions;$("trendTrackFilter").onchange=drawTrend;$("clearCompareBtn").onclick=()=>{compareIds.clear();renderSessions();renderComparison()};
 $("fDate").value=new Date().toISOString().slice(0,10);
-$("fDate").addEventListener("change",()=>{$("fSessionNo").value="";setSuggestedSessionNo()});
+["fDate","fTrack","fClass"].forEach(id=>{
+ $(""+id).addEventListener("change",()=>{$("fSessionNo").value="";setSuggestedSessionNo()});
+ $(""+id).addEventListener("input",()=>{$("fSessionNo").value="";setSuggestedSessionNo()});
+});
 client.auth.getSession().then(({data})=>boot(data.session));client.auth.onAuthStateChange((_e,s)=>boot(s));window.addEventListener("resize",drawTrend);
 </script>
 </body></html>
