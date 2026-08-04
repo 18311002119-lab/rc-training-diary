@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>RC练车电子教练</title>
+<meta name="description" content="VRC Pro练车数据、趋势与电子教练训练日记">
+<style>
+:root{--bg:#0a0f15;--panel:#121b26;--panel2:#182433;--line:#29394c;--text:#edf4fb;--muted:#8fa4ba;--green:#42d392;--blue:#5aa9ff;--orange:#ffbd59;--red:#ff6b6b}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:radial-gradient(circle at 15% 0,rgba(66,211,146,.12),transparent 30%),radial-gradient(circle at 90% 10%,rgba(90,169,255,.12),transparent 28%),var(--bg);color:var(--text);font-family:Inter,"Microsoft YaHei","PingFang SC",system-ui,sans-serif;line-height:1.6}
+.wrap{max-width:1180px;margin:auto;padding:24px 16px 60px}.hero,.card{border:1px solid var(--line);background:linear-gradient(180deg,rgba(24,36,51,.96),rgba(15,23,33,.96));border-radius:20px;box-shadow:0 18px 45px rgba(0,0,0,.26)}
+.hero{padding:30px;position:relative;overflow:hidden}.hero:after{content:"";position:absolute;width:260px;height:260px;border-radius:50%;right:-90px;top:-120px;background:linear-gradient(135deg,var(--green),var(--blue));opacity:.12}.eyebrow{font-size:.76rem;letter-spacing:.14em;color:var(--green);font-weight:900}h1{font-size:clamp(2rem,6vw,4.1rem);line-height:1.02;margin:.2rem 0}.sub{color:var(--muted);max-width:760px}
+.topbar{display:flex;flex-wrap:wrap;gap:10px;justify-content:space-between;align-items:center;margin-top:18px}.status{font-size:.86rem;color:#b9f3d9}.authbox{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.authbox input{min-width:240px}
+button,input,select,textarea{font:inherit}button{border:0;border-radius:11px;padding:10px 14px;font-weight:800;cursor:pointer;background:var(--green);color:#062117}button.secondary{background:#25364b;color:var(--text)}button.danger{background:#4a252a;color:#ffd3d3}button:disabled{opacity:.45;cursor:not-allowed}
+input,select,textarea{width:100%;padding:10px 11px;border-radius:11px;border:1px solid var(--line);background:#0d151f;color:var(--text);outline:none}input:focus,select:focus,textarea:focus{border-color:var(--blue)}textarea{min-height:90px;resize:vertical}
+nav{display:flex;flex-wrap:wrap;gap:8px;margin:16px 0}nav a{color:var(--text);text-decoration:none;padding:8px 11px;border:1px solid var(--line);border-radius:10px;background:rgba(255,255,255,.03);font-size:.88rem}
+.grid{display:grid;gap:15px}.metrics{grid-template-columns:repeat(5,minmax(0,1fr))}.two{grid-template-columns:1.1fr .9fr}.card{padding:19px}section{margin-top:19px}.title{display:flex;justify-content:space-between;gap:12px;align-items:end;margin:0 0 10px}.title h2{margin:0;font-size:1.35rem}.small,.muted{color:var(--muted);font-size:.84rem}
+.label{font-size:.82rem;color:var(--muted)}.value{font-size:1.9rem;font-weight:900;letter-spacing:-.04em;margin:.15rem 0}.green{color:var(--green)}.blue{color:var(--blue)}.orange{color:var(--orange)}
+.coach{border-left:4px solid var(--green);background:linear-gradient(90deg,rgba(66,211,146,.1),rgba(66,211,146,.02))}.hidden{display:none!important}
+.formgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:11px}.field label{display:block;color:var(--muted);font-size:.82rem;margin-bottom:4px}.full{grid-column:1/-1}.actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+table{width:100%;border-collapse:collapse;font-size:.88rem}th,td{padding:10px 8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}th{color:var(--muted)}tbody tr:last-child td{border-bottom:0}.tablewrap{overflow:auto}
+.tag{display:inline-block;padding:2px 7px;border-radius:999px;font-size:.72rem;font-weight:800;background:rgba(90,169,255,.12);color:#b7d9ff}.tag.coachsrc{background:rgba(66,211,146,.12);color:#b9f3d9}.note{padding:13px;border:1px solid rgba(255,189,89,.25);background:rgba(255,189,89,.07);color:#ffe2aa;border-radius:13px;font-size:.88rem}
+canvas{width:100%;height:290px;display:block}.empty{text-align:center;color:var(--muted);padding:28px}.toast{position:fixed;right:18px;bottom:18px;max-width:360px;padding:12px 15px;border-radius:12px;background:#1d2c3e;border:1px solid var(--line);box-shadow:0 12px 35px rgba(0,0,0,.35);z-index:10}
+footer{text-align:center;color:var(--muted);font-size:.8rem;margin-top:25px}
+@media(max-width:950px){.metrics{grid-template-columns:repeat(3,1fr)}.two{grid-template-columns:1fr}}@media(max-width:650px){.metrics,.formgrid{grid-template-columns:1fr 1fr}.full{grid-column:1/-1}.hero{padding:23px 18px}}@media(max-width:470px){.metrics,.formgrid{grid-template-columns:1fr}.full{grid-column:auto}.authbox input{min-width:100%}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="hero">
+  <div class="eyebrow">VRC PRO · FUTABA T10PXR</div>
+  <h1>RC练车电子教练</h1>
+  <div class="sub">在线保存练习数据，区分单圈上限与比赛节奏，并在每次训练后形成明确的下一步任务。</div>
+  <div class="topbar">
+    <div id="authStatus" class="status">尚未登录</div>
+    <div class="authbox">
+      <input id="loginEmail" type="email" placeholder="输入邮箱，接收登录链接">
+      <button id="loginBtn">发送登录链接</button>
+      <button id="logoutBtn" class="secondary hidden">退出登录</button>
+    </div>
+  </div>
+</header>
+
+<nav>
+<a href="#dashboard">仪表盘</a><a href="#trend">趋势</a><a href="#add">添加记录</a><a href="#sessions">训练记录</a><a href="#coach">教练判断</a>
+</nav>
+
+<div id="loginHint" class="note">第一次使用：先在Supabase运行项目中的 <code>schema.sql</code>，并把GitHub Pages网址加入Auth的Site URL和Redirect URLs。然后输入邮箱，通过邮件中的Magic Link登录。</div>
+
+<main id="app" class="hidden">
+<section id="dashboard">
+  <div class="title"><h2>当前仪表盘</h2><div class="small" id="syncText"></div></div>
+  <div class="grid metrics">
+    <div class="card"><div class="label">历史PB</div><div id="mPB" class="value green">—</div><div class="small">所有赛道中最快记录</div></div>
+    <div class="card"><div class="label">Rhein-Main PB</div><div id="mTrackPB" class="value green">—</div><div class="small">1:8 E-Buggy Spec</div></div>
+    <div class="card"><div class="label">最近平均</div><div id="mLatestAvg" class="value blue">—</div><div class="small">最近一次有平均值的训练</div></div>
+    <div class="card"><div class="label">最好长组平均</div><div id="mBestAvg" class="value">—</div><div class="small">10圈及以上</div></div>
+    <div class="card"><div class="label">累计记录</div><div id="mCount" class="value orange">—</div><div class="small">云端训练组数</div></div>
+  </div>
+</section>
+
+<section id="coach" class="grid two">
+  <div class="card coach">
+    <div class="title"><h2>最近教练判断</h2></div>
+    <div id="coachText">暂无教练评语。</div>
+  </div>
+  <div class="card">
+    <div class="title"><h2>下一目标</h2></div>
+    <div id="goalText">完成一次训练后生成。</div>
+  </div>
+</section>
+
+<section id="trend">
+  <div class="title"><h2>Rhein-Main成绩趋势</h2><div class="small">绿色：PB；蓝色：平均</div></div>
+  <div class="card"><canvas id="chart"></canvas></div>
+</section>
+
+<section id="add">
+  <div class="title"><h2>添加训练记录</h2><div class="small">数据直接写入你的Supabase账户</div></div>
+  <form id="sessionForm" class="card">
+    <div class="formgrid">
+      <div class="field"><label>日期</label><input id="fDate" type="date" required></div>
+      <div class="field"><label>赛道</label><input id="fTrack" value="Rhein-Main" required></div>
+      <div class="field"><label>组别</label><input id="fClass" value="1:8 Electric Buggy Spec" required></div>
+      <div class="field"><label>模式</label><select id="fMode"><option>Practice</option><option>Time Trial</option><option>Event</option><option>Multiplayer</option></select></div>
+      <div class="field"><label>圈数</label><input id="fLaps" type="number" min="1"></div>
+      <div class="field"><label>重大失误数</label><input id="fMistakes" type="number" min="0"></div>
+      <div class="field"><label>最快圈 / 秒</label><input id="fBest" type="number" step="0.001" min="0"></div>
+      <div class="field"><label>平均圈 / 秒</label><input id="fAvg" type="number" step="0.001" min="0"></div>
+      <div class="field"><label>主观状态 1～5</label><input id="fMood" type="number" min="1" max="5"></div>
+      <div class="field full"><label>逐圈时间（空格、逗号或换行分隔；填写后自动计算平均、中位数和最快5圈平均）</label><textarea id="fLapTimes" placeholder="39.663 38.963 39.602 ..."></textarea></div>
+      <div class="field full"><label>训练重点</label><input id="fFocus" placeholder="本次只练一个核心问题"></div>
+      <div class="field full"><label>复盘备注</label><textarea id="fNotes" placeholder="最好动作、最大损失、下一次唯一训练点"></textarea></div>
+      <div class="field"><label>车辆设定</label><textarea id="fVehicle"></textarea></div>
+      <div class="field"><label>遥控器设定</label><textarea id="fController"></textarea></div>
+    </div>
+    <div class="actions">
+      <button type="submit">保存训练记录</button>
+      <button type="button" class="secondary" id="exportBtn">导出JSON</button>
+    </div>
+  </form>
+</section>
+
+<section id="sessions">
+  <div class="title"><h2>训练记录</h2><div class="small">AI教练导入与网页手动记录统一显示</div></div>
+  <div class="card tablewrap">
+    <table><thead><tr><th>日期</th><th>赛道 / 组别</th><th>圈数</th><th>PB</th><th>平均</th><th>失误</th><th>来源</th><th></th></tr></thead><tbody id="sessionRows"></tbody></table>
+    <div id="emptyRows" class="empty hidden">暂无数据。</div>
+  </div>
+</section>
+</main>
+<footer>RC练车电子教练 · 把训练当作数据实验，而不是天赋考试。</footer>
+</div>
+<div id="toast" class="toast hidden"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="./config.js"></script>
+<script>
+const cfg=window.RC_COACH_CONFIG;
+const client=window.supabase.createClient(cfg.supabaseUrl,cfg.supabasePublishableKey,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
+let currentUser=null,sessions=[];
+
+const $=id=>document.getElementById(id);
+function toast(msg,bad=false){const el=$("toast");el.textContent=msg;el.style.borderColor=bad?"var(--red)":"var(--green)";el.classList.remove("hidden");setTimeout(()=>el.classList.add("hidden"),3800)}
+function num(v,d=3){return v===null||v===undefined||v===""?"—":Number(v).toFixed(d)+" s"}
+function esc(v){return String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]))}
+function parseTimes(raw){return raw.split(/[\s,，;；]+/).map(Number).filter(v=>Number.isFinite(v)&&v>0)}
+function stats(arr){if(!arr.length)return{};const s=[...arr].sort((a,b)=>a-b),avg=arr.reduce((a,b)=>a+b,0)/arr.length;const mid=s.length%2?s[(s.length-1)/2]:(s[s.length/2-1]+s[s.length/2])/2;return{best:s[0],avg,median:mid,best5:s.length>=5?s.slice(0,5).reduce((a,b)=>a+b,0)/5:null}}
+async function sendMagicLink(){
+ const email=$("loginEmail").value.trim();if(!email)return toast("请先输入邮箱。",true);
+ const {error}=await client.auth.signInWithOtp({email,options:{emailRedirectTo:location.href.split("#")[0].split("?")[0]}});
+ if(error)return toast(error.message,true);toast("登录邮件已发送，请打开邮件中的链接。");
+}
+async function logout(){await client.auth.signOut();location.reload()}
+async function syncCoach(){
+ const res=await fetch("./coach_updates.json?ts="+Date.now());if(!res.ok)throw new Error("无法读取教练更新");
+ const updates=await res.json();if(!updates.length)return 0;
+ const ids=updates.map(x=>x.external_id);
+ const {data:existing,error:e1}=await client.from("training_sessions").select("external_id").in("external_id",ids);
+ if(e1)throw e1;const have=new Set((existing||[]).map(x=>x.external_id));
+ const missing=updates.filter(x=>!have.has(x.external_id)).map(x=>({...x,user_id:currentUser.id}));
+ if(!missing.length)return 0;
+ const {error}=await client.from("training_sessions").insert(missing);if(error)throw error;return missing.length;
+}
+async function loadSessions(){
+ const {data,error}=await client.from("training_sessions").select("*").order("session_date",{ascending:false}).order("created_at",{ascending:false});
+ if(error)throw error;sessions=data||[];render();
+}
+function render(){
+ $("mCount").textContent=sessions.length;
+ const allPB=sessions.filter(x=>x.best_lap!=null).map(x=>Number(x.best_lap));
+ $("mPB").textContent=allPB.length?Math.min(...allPB).toFixed(3)+" s":"—";
+ const rhein=sessions.filter(x=>x.track==="Rhein-Main"&&x.class_name.includes("Electric Buggy Spec"));
+ const rpb=rhein.filter(x=>x.best_lap!=null).map(x=>Number(x.best_lap));
+ $("mTrackPB").textContent=rpb.length?Math.min(...rpb).toFixed(3)+" s":"—";
+ const latest=sessions.find(x=>x.average_lap!=null);
+ $("mLatestAvg").textContent=latest?Number(latest.average_lap).toFixed(3)+" s":"—";
+ const longAvg=sessions.filter(x=>Number(x.lap_count)>=10&&x.average_lap!=null).map(x=>Number(x.average_lap));
+ $("mBestAvg").textContent=longAvg.length?Math.min(...longAvg).toFixed(3)+" s":"—";
+ const noted=sessions.find(x=>x.coach_note);
+ $("coachText").innerHTML=noted?`<strong>${esc(noted.coach_note)}</strong><div class="small" style="margin-top:8px">${esc(noted.track)} · ${esc(noted.session_date)}</div>`:"暂无教练评语。";
+ $("goalText").textContent=noted?.next_goal||"完成一次训练后生成。";
+ $("sessionRows").innerHTML=sessions.map(s=>`<tr><td>${esc(s.session_date)}</td><td><strong>${esc(s.track)}</strong><br><span class="small">${esc(s.class_name)} · ${esc(s.mode)}</span></td><td>${s.lap_count??"—"}</td><td>${num(s.best_lap)}</td><td>${num(s.average_lap)}</td><td>${s.mistake_count??"—"}</td><td><span class="tag ${s.source==="coach-import"?"coachsrc":""}">${s.source==="coach-import"?"AI教练":"网页"}</span></td><td><button class="danger" onclick="removeSession('${s.id}')">删除</button></td></tr>`).join("");
+ $("emptyRows").classList.toggle("hidden",sessions.length>0);drawChart(rhein);
+}
+async function removeSession(id){if(!confirm("确认删除这条训练记录？"))return;const {error}=await client.from("training_sessions").delete().eq("id",id);if(error)return toast(error.message,true);toast("已删除。");await loadSessions()}
+async function saveForm(ev){
+ ev.preventDefault();const times=parseTimes($("fLapTimes").value),st=stats(times);
+ const row={user_id:currentUser.id,session_date:$("fDate").value,simulator:"VRC Pro",track:$("fTrack").value.trim(),class_name:$("fClass").value.trim(),mode:$("fMode").value,
+ lap_count:$("fLaps").value?Number($("fLaps").value):(times.length||null),best_lap:$("fBest").value?Number($("fBest").value):(st.best??null),average_lap:$("fAvg").value?Number($("fAvg").value):(st.avg??null),
+ median_lap:st.median??null,best5_average:st.best5??null,mistake_count:$("fMistakes").value===""?null:Number($("fMistakes").value),lap_times:times.length?times:null,
+ focus:$("fFocus").value.trim()||null,notes:$("fNotes").value.trim()||null,vehicle_setup:$("fVehicle").value.trim()||null,controller_setup:$("fController").value.trim()||null,
+ mood:$("fMood").value?Number($("fMood").value):null,source:"user"};
+ const {error}=await client.from("training_sessions").insert(row);if(error)return toast(error.message,true);toast("训练记录已保存。");ev.target.reset();$("fDate").value=new Date().toISOString().slice(0,10);$("fTrack").value="Rhein-Main";$("fClass").value="1:8 Electric Buggy Spec";await loadSessions();
+}
+function drawChart(rows){
+ const c=$("chart"),ctx=c.getContext("2d"),ratio=devicePixelRatio||1,W=c.clientWidth,H=290;c.width=W*ratio;c.height=H*ratio;ctx.scale(ratio,ratio);ctx.clearRect(0,0,W,H);
+ const data=[...rows].filter(x=>x.best_lap!=null||x.average_lap!=null).reverse();if(!data.length){ctx.fillStyle="#8fa4ba";ctx.fillText("暂无趋势数据",20,30);return}
+ const vals=data.flatMap(x=>[x.best_lap,x.average_lap]).filter(v=>v!=null).map(Number),min=Math.floor(Math.min(...vals)-1),max=Math.ceil(Math.max(...vals)+1),p={l:50,r:20,t:24,b:44};
+ ctx.font='12px "Microsoft YaHei"';ctx.strokeStyle="#29394c";ctx.fillStyle="#8fa4ba";
+ for(let v=min;v<=max;v++){const y=p.t+(max-v)/(max-min)*(H-p.t-p.b);ctx.beginPath();ctx.moveTo(p.l,y);ctx.lineTo(W-p.r,y);ctx.stroke();ctx.fillText(v+"s",8,y+4)}
+ function line(key,color){ctx.strokeStyle=color;ctx.fillStyle=color;ctx.lineWidth=3;let started=false;ctx.beginPath();data.forEach((d,i)=>{if(d[key]==null)return;const x=data.length===1?(p.l+W-p.r)/2:p.l+i*(W-p.l-p.r)/(data.length-1),y=p.t+(max-Number(d[key]))/(max-min)*(H-p.t-p.b);if(!started){ctx.moveTo(x,y);started=true}else ctx.lineTo(x,y)});ctx.stroke();data.forEach((d,i)=>{if(d[key]==null)return;const x=data.length===1?(p.l+W-p.r)/2:p.l+i*(W-p.l-p.r)/(data.length-1),y=p.t+(max-Number(d[key]))/(max-min)*(H-p.t-p.b);ctx.beginPath();ctx.arc(x,y,4,0,Math.PI*2);ctx.fill()})}
+ line("best_lap","#42d392");line("average_lap","#5aa9ff");
+ data.forEach((d,i)=>{const x=data.length===1?(p.l+W-p.r)/2:p.l+i*(W-p.l-p.r)/(data.length-1);ctx.fillStyle="#8fa4ba";ctx.textAlign="center";ctx.fillText(d.session_date.slice(5),x,H-15)});ctx.textAlign="left";
+}
+function exportJSON(){const blob=new Blob([JSON.stringify(sessions,null,2)],{type:"application/json"}),u=URL.createObjectURL(blob),a=document.createElement("a");a.href=u;a.download="rc-training-sessions.json";a.click();URL.revokeObjectURL(u)}
+async function boot(session){
+ currentUser=session?.user||null;$("app").classList.toggle("hidden",!currentUser);$("loginHint").classList.toggle("hidden",!!currentUser);$("logoutBtn").classList.toggle("hidden",!currentUser);$("loginBtn").classList.toggle("hidden",!!currentUser);$("loginEmail").classList.toggle("hidden",!!currentUser);
+ $("authStatus").textContent=currentUser?"已登录："+currentUser.email:"尚未登录";
+ if(currentUser){try{const n=await syncCoach();$("syncText").textContent=n?`已自动导入${n}条教练更新`:"教练更新已同步";await loadSessions()}catch(e){toast(e.message||String(e),true)}}
+}
+$("loginBtn").onclick=sendMagicLink;$("logoutBtn").onclick=logout;$("sessionForm").onsubmit=saveForm;$("exportBtn").onclick=exportJSON;$("fDate").value=new Date().toISOString().slice(0,10);
+client.auth.getSession().then(({data})=>boot(data.session));client.auth.onAuthStateChange((_e,s)=>boot(s));window.addEventListener("resize",()=>drawChart(sessions.filter(x=>x.track==="Rhein-Main"&&x.class_name.includes("Electric Buggy Spec"))));
+</script>
+</body></html>
