@@ -6,7 +6,7 @@
 <title>RC练车电子教练</title>
 <meta name="description" content="VRC Pro练车数据、趋势、筛选、对比与电子教练训练日记">
 <style>
-:root{--bg:#0a0f15;--panel:#121b26;--panel2:#182433;--line:#29394c;--text:#edf4fb;--muted:#8fa4ba;--green:#42d392;--blue:#5aa9ff;--orange:#ffbd59;--red:#ff6b6b}
+:root{--bg:#0a0f15;--panel:#121b26;--panel2:#182433;--line:#29394c;--text:#edf4fb;--muted:#8fa4ba;--green:#42d392;--blue:#5aa9ff;--orange:#ffbd59;--red:#ff6b6b;--purple:#b56cff}
 *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:radial-gradient(circle at 15% 0,rgba(66,211,146,.12),transparent 30%),radial-gradient(circle at 90% 10%,rgba(90,169,255,.12),transparent 28%),var(--bg);color:var(--text);font-family:Inter,"Microsoft YaHei","PingFang SC",system-ui,sans-serif;line-height:1.6}
 .wrap{max-width:1240px;margin:auto;padding:24px 16px 60px}.hero,.card{border:1px solid var(--line);background:linear-gradient(180deg,rgba(24,36,51,.96),rgba(15,23,33,.96));border-radius:20px;box-shadow:0 18px 45px rgba(0,0,0,.26)}
 .hero{padding:30px;position:relative;overflow:hidden}.hero:after{content:"";position:absolute;width:260px;height:260px;border-radius:50%;right:-90px;top:-120px;background:linear-gradient(135deg,var(--green),var(--blue));opacity:.12}.eyebrow{font-size:.76rem;letter-spacing:.14em;color:var(--green);font-weight:900}h1{font-size:clamp(2rem,6vw,4.1rem);line-height:1.02;margin:.2rem 0}.sub{color:var(--muted);max-width:820px}
@@ -15,13 +15,26 @@ button,input,select,textarea{font:inherit}button{border:0;border-radius:11px;pad
 input,select,textarea{width:100%;padding:10px 11px;border-radius:11px;border:1px solid var(--line);background:#0d151f;color:var(--text);outline:none}input:focus,select:focus,textarea:focus{border-color:var(--blue)}textarea{min-height:90px;resize:vertical}
 nav{display:flex;flex-wrap:wrap;gap:8px;margin:16px 0}nav a{color:var(--text);text-decoration:none;padding:8px 11px;border:1px solid var(--line);border-radius:10px;background:rgba(255,255,255,.03);font-size:.88rem}
 .grid{display:grid;gap:15px}.metrics{grid-template-columns:repeat(5,minmax(0,1fr))}.two{grid-template-columns:1.1fr .9fr}.card{padding:19px}section{margin-top:19px}.title{display:flex;justify-content:space-between;gap:12px;align-items:end;margin:0 0 10px}.title h2{margin:0;font-size:1.35rem}.small,.muted{color:var(--muted);font-size:.84rem}
-.toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:end}.toolbar .field{min-width:220px}.toolbar .field.smallfield{min-width:125px}#dashboard .toolbar{width:100%}#dashboardSession{min-width:310px}.label{font-size:.82rem;color:var(--muted)}.value{font-size:1.9rem;font-weight:900;letter-spacing:-.04em;margin:.15rem 0}.green{color:var(--green)}.blue{color:var(--blue)}.orange{color:var(--orange)}
+.toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:end}.toolbar .field{min-width:220px}.toolbar .field.smallfield{min-width:125px}#dashboard .toolbar{width:100%}#dashboardSession{min-width:310px}.label{font-size:.82rem;color:var(--muted)}.value{font-size:1.9rem;font-weight:900;letter-spacing:-.04em;margin:.15rem 0}.green{color:var(--green)}.blue{color:var(--blue)}.orange{color:var(--orange)}.purple{color:var(--purple)}.red{color:var(--red)}
 .coach{border-left:4px solid var(--green);background:linear-gradient(90deg,rgba(66,211,146,.1),rgba(66,211,146,.02))}.hidden{display:none!important}
 .formgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:11px}.field label{display:block;color:var(--muted);font-size:.82rem;margin-bottom:4px}.full{grid-column:1/-1}.actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
 table{width:100%;border-collapse:collapse;font-size:.88rem}th,td{padding:10px 8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}th{color:var(--muted)}tbody tr:last-child td{border-bottom:0}.tablewrap{overflow:auto}tr.selected{background:rgba(66,211,146,.07)}
 .tag{display:inline-block;padding:2px 7px;border-radius:999px;font-size:.72rem;font-weight:800;background:rgba(90,169,255,.12);color:#b7d9ff}.tag.coachsrc{background:rgba(66,211,146,.12);color:#b9f3d9}.note{padding:13px;border:1px solid rgba(255,189,89,.25);background:rgba(255,189,89,.07);color:#ffe2aa;border-radius:13px;font-size:.88rem}.info{padding:12px;border:1px solid rgba(90,169,255,.25);background:rgba(90,169,255,.07);color:#cfe5ff;border-radius:13px;font-size:.86rem}
 canvas{width:100%;height:300px;display:block}.empty{text-align:center;color:var(--muted);padding:28px}.toast{position:fixed;right:18px;bottom:18px;max-width:380px;padding:12px 15px;border-radius:12px;background:#1d2c3e;border:1px solid var(--line);box-shadow:0 12px 35px rgba(0,0,0,.35);z-index:10}
 .group-list{display:grid;gap:10px}.record-group{border:1px solid var(--line);border-radius:15px;background:rgba(255,255,255,.018);overflow:hidden}.record-group>summary{list-style:none;cursor:pointer;padding:13px 15px;display:flex;justify-content:space-between;align-items:center;gap:12px;font-weight:900;background:rgba(255,255,255,.025)}.record-group>summary::-webkit-details-marker{display:none}.record-group>summary:before{content:"▸";color:var(--green);transition:transform .16s ease}.record-group[open]>summary:before{transform:rotate(90deg)}.group-title{flex:1}.group-meta{color:var(--muted);font-size:.8rem;font-weight:600}.group-body{padding:0 12px 12px}.group-body table{margin-top:4px}.view-switch{display:flex;gap:6px;flex-wrap:wrap}.view-switch button.active{background:var(--green);color:#062117}.view-switch button:not(.active){background:#25364b;color:var(--text)}.compare-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.compare-card{border:1px solid var(--line);border-radius:15px;padding:14px;background:rgba(255,255,255,.025)}.compare-card h3{margin:0 0 8px;font-size:1rem}.delta-good{color:var(--green)}.delta-bad{color:var(--red)}
+.compare-highlights{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:10px}
+.rank-card{--rank-color:var(--text);position:relative;overflow:hidden;border:1px solid var(--line);border-radius:15px;padding:16px;background:rgba(255,255,255,.025)}
+.rank-card:before{content:"";position:absolute;inset:0 auto 0 0;width:4px;background:var(--rank-color)}
+.rank-card.fastest{--rank-color:var(--purple);border-color:rgba(181,108,255,.5);background:linear-gradient(135deg,rgba(181,108,255,.14),rgba(255,255,255,.025))}
+.rank-card.second{--rank-color:var(--green);border-color:rgba(66,211,146,.5);background:linear-gradient(135deg,rgba(66,211,146,.12),rgba(255,255,255,.025))}
+.rank-card.slowest{--rank-color:var(--red);border-color:rgba(255,107,107,.5);background:linear-gradient(135deg,rgba(255,107,107,.12),rgba(255,255,255,.025))}
+.rank-card h3{margin:0 0 7px;color:var(--rank-color);font-size:1.05rem}
+.rank-meta{color:var(--muted);font-size:.82rem;line-height:1.5}
+.rank-meta strong{color:var(--text);font-size:.94rem}
+.rank-metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:12px}
+.rank-metric{padding:8px;border:1px solid rgba(255,255,255,.07);border-radius:10px;background:rgba(0,0,0,.12)}
+.rank-metric .label{font-size:.72rem}
+.rank-metric strong{display:block;margin-top:2px;color:var(--rank-color);font-size:1rem;white-space:nowrap}
 
 .record-form-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:11px}
 .record-form-grid .wide{grid-column:span 2}
@@ -29,7 +42,9 @@ canvas{width:100%;height:300px;display:block}.empty{text-align:center;color:var(
 @media(max-width:900px){.record-form-grid{grid-template-columns:1fr 1fr}}
 @media(max-width:520px){.record-form-grid{grid-template-columns:1fr}.record-form-grid .wide{grid-column:auto}}
 footer{text-align:center;color:var(--muted);font-size:.8rem;margin-top:25px}
-@media(max-width:1020px){.metrics{grid-template-columns:repeat(3,1fr)}.two{grid-template-columns:1fr}.compare-grid{grid-template-columns:1fr 1fr}}@media(max-width:650px){.metrics,.formgrid{grid-template-columns:1fr 1fr}.full{grid-column:1/-1}.hero{padding:23px 18px}.toolbar .field{min-width:100%}}@media(max-width:470px){.metrics,.formgrid,.compare-grid{grid-template-columns:1fr}.full{grid-column:auto}.authbox input{min-width:100%}}
+@media(max-width:1020px){.metrics{grid-template-columns:repeat(3,1fr)}.two{grid-template-columns:1fr}.compare-grid{grid-template-columns:1fr 1fr}.compare-highlights{grid-template-columns:1fr}}
+@media(max-width:650px){.metrics,.formgrid{grid-template-columns:1fr 1fr}.full{grid-column:1/-1}.hero{padding:23px 18px}.toolbar .field{min-width:100%}}
+@media(max-width:470px){.metrics,.formgrid,.compare-grid{grid-template-columns:1fr}.full{grid-column:auto}.authbox input{min-width:100%}}
 </style>
 </head>
 <body>
@@ -159,10 +174,11 @@ footer{text-align:center;color:var(--muted);font-size:.8rem;margin-top:25px}
 </section>
 
 <section id="compare">
-  <div class="title"><h2>训练记录对比</h2><div class="small">第一条为基准；负的圈速差表示更快</div></div>
+  <div class="title"><h2>训练记录对比</h2><div class="small">上方按PB排序；第一条为基准；负的圈速差表示更快</div></div>
   <div id="compareHint" class="empty card">在训练记录中勾选2～4条数据。</div>
   <div id="compareContent" class="hidden">
     <div id="compareWarning" class="note hidden"></div>
+    <div id="compareHighlights" class="compare-highlights"></div>
     <div id="compareCards" class="compare-grid" style="margin-top:10px"></div>
     <div class="card tablewrap" style="margin-top:10px">
       <table><thead><tr><th>记录</th><th>纪录%</th><th>最快圈</th><th>Δ最快</th><th>平均圈</th><th>Δ平均</th><th>最快5圈</th><th>中位数</th><th>失误</th></tr></thead><tbody id="compareRows"></tbody></table>
@@ -227,7 +243,6 @@ function autofillTrackRecord(){
  $("fTrackRecord").value=record?Number(record.record_lap).toFixed(3):"";
  calculateRecordPercent()
 }
-
 
 function trackKey(s){return `${s.track}||${vehicleOf(s)}||${variantOf(s)}`}
 function sessionCode(s){return s.daily_session_no?`${s.session_date}-${s.daily_session_no}`:s.session_date}
@@ -407,10 +422,45 @@ function renderSessions(){
 }
 function renderComparison(){
  const selected=[...compareIds].map(id=>sessions.find(s=>s.id===id)).filter(Boolean);
- $("compareHint").classList.toggle("hidden",selected.length>=2);$("compareContent").classList.toggle("hidden",selected.length<2);if(selected.length<2)return;
+ const ready=selected.length>=2;
+ $("compareHint").classList.toggle("hidden",ready);
+ $("compareContent").classList.toggle("hidden",!ready);
+ if(!ready){
+   $("compareHighlights").innerHTML="";
+   return
+ }
+
  const base=selected[0],same=selected.every(s=>trackKey(s)===trackKey(base));
  $("compareWarning").classList.toggle("hidden",same);
- if(!same)$("compareWarning").textContent="所选记录来自不同赛道或组别：秒数差不代表驾驶水平差异，请优先比较纪录百分比。";
+ if(!same)$("compareWarning").textContent="所选记录来自不同赛道或组别：上方排名仅按PB秒数排序，不代表驾驶水平；跨赛道请优先比较纪录百分比。";
+
+ const ranked=selected
+   .filter(s=>s.best_lap!==null&&s.best_lap!==undefined&&Number.isFinite(Number(s.best_lap)))
+   .sort((a,b)=>Number(a.best_lap)-Number(b.best_lap));
+ const fastest=ranked[0]||null;
+ const secondFastest=ranked[1]||null;
+ const slowest=ranked.length>=2?ranked[ranked.length-1]:null;
+ const secondAlsoSlowest=secondFastest&&slowest&&secondFastest.id===slowest.id;
+
+ function rankCard(title,kind,s){
+   if(!s)return `<div class="rank-card ${kind}"><h3>${title}</h3><div class="rank-meta">没有可用的PB数据</div></div>`;
+   return `<div class="rank-card ${kind}">
+     <h3>${title}</h3>
+     <div class="rank-meta"><strong>${esc(sessionCode(s))}</strong><br>${esc(s.track)} · ${esc(sessionClassLabel(s))}</div>
+     <div class="rank-metrics">
+       <div class="rank-metric"><span class="label">PB</span><strong>${sec(s.best_lap)}</strong></div>
+       <div class="rank-metric"><span class="label">平均</span><strong>${sec(s.average_lap)}</strong></div>
+       <div class="rank-metric"><span class="label">纪录</span><strong>${pct(s.record_percent)}</strong></div>
+     </div>
+   </div>`
+ }
+
+ $("compareHighlights").innerHTML=[
+   rankCard("最快圈","fastest",fastest),
+   rankCard("第二快圈","second",secondFastest),
+   rankCard(secondAlsoSlowest?"最慢圈（同时为第二快）":"最慢圈","slowest",slowest)
+ ].join("");
+
  $("compareCards").innerHTML=selected.map((s,i)=>`<div class="compare-card"><h3>${i===0?"基准 · ":""}${esc(sessionCode(s))}</h3><div class="small">${esc(s.track)} · ${esc(sessionClassLabel(s))}</div><div style="margin-top:8px">纪录：<strong class="green">${pct(s.record_percent)}</strong></div><div>PB：<strong>${sec(s.best_lap)}</strong></div><div>平均：<strong>${sec(s.average_lap)}</strong></div></div>`).join("");
  function delta(v,b){if(v==null||b==null)return"—";const d=Number(v)-Number(b),cls=d<0?"delta-good":d>0?"delta-bad":"";return `<span class="${cls}">${d>0?"+":""}${d.toFixed(3)} s</span>`}
  $("compareRows").innerHTML=selected.map((s,i)=>`<tr><td>${i===0?"基准 · ":""}${esc(sessionCode(s))}<br><span class="small">${esc(s.track)}</span></td><td>${pct(s.record_percent)}</td><td>${sec(s.best_lap)}</td><td>${i===0?"—":delta(s.best_lap,base.best_lap)}</td><td>${sec(s.average_lap)}</td><td>${i===0?"—":delta(s.average_lap,base.average_lap)}</td><td>${sec(s.best5_average)}</td><td>${sec(s.median_lap)}</td><td>${s.mistake_count??"—"}</td></tr>`).join("");
