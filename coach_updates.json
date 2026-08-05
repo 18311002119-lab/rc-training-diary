@@ -95,5 +95,28 @@
     "next_goal": "以后记录精确赛道名、圈数和完整逐圈数据。",
     "source": "coach-import",
     "approximate": true
+  },
+  {
+    "external_id": "coach-20260805-rheinmain-rallymod-11laps",
+    "session_date": "2026-08-05",
+    "daily_session_no": 1,
+    "simulator": "VRC Pro",
+    "track": "Rhein-Main",
+    "class_name": "Rally Mod",
+    "mode": "Practice",
+    "track_grip_percent": 100,
+    "lap_count": 11,
+    "best_lap": 40.563,
+    "average_lap": 45.092,
+    "median_lap": null,
+    "best5_average": null,
+    "mistake_count": null,
+    "lap_times": null,
+    "mood": 4,
+    "focus": "适应Rhein-Main 100%抓地力下Rally Mod的路线、刹车点和跳台落地",
+    "notes": "刚开始跑Rhein-Main的Rally Mod组，仍在适应中。状态4/5；平均每圈约2～3个大失误。截图确认11圈，PB 40.563秒，平均45.092秒，赛道抓地力100%。",
+    "coach_note": "40.563秒的PB说明基础速度已经不差，但平均圈比PB慢4.529秒，主要损失来自每圈反复出现的大失误。当前阶段不应追求更激进的单圈，而应先建立完整、可重复的无事故路线。",
+    "next_goal": "下一组先把每圈大失误压到1次以内，并把11圈平均推进到44.0秒以内；PB暂时不作为主要目标。",
+    "source": "coach-import"
   }
 ]
