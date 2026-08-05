@@ -128,8 +128,8 @@ footer{text-align:center;color:var(--muted);font-size:.8rem;margin-top:25px}
   <div class="title">
     <h2 id="trendTitle">成绩趋势</h2>
     <div class="toolbar">
-      <div class="field smallfield"><label>趋势赛道</label><select id="trendTrackFilter"></select></div>
-      <div class="small" id="trendLegend">同赛道：绿色PB、蓝色平均</div>
+      <div class="field"><label>趋势赛道 / 组别</label><select id="trendTrackFilter"></select></div>
+      <div class="small" id="trendLegend">同赛道、同组别：绿色PB、蓝色平均</div>
     </div>
   </div>
   <div class="card"><canvas id="chart"></canvas></div>
@@ -345,14 +345,32 @@ function setDashboardFiltersFromSession(s){
  $("dashboardDayFilter").value=parts[2]||"";
  $("dashboardTrackFilter").value=s.track||""
 }
+function renderTrendOptions(){
+ const el=$("trendTrackFilter");
+ const old=el.value;
+ const optionMap=new Map();
+
+ sessions.forEach(s=>{
+   optionMap.set(trackKey(s),`${s.track} · ${sessionClassLabel(s)}`)
+ });
+
+ const options=[...optionMap.entries()]
+   .sort((a,b)=>a[1].localeCompare(b[1],"zh-CN"));
+
+ el.innerHTML=optionHTML("","全部赛道 / 组别（纪录%）")
+   +options.map(([value,label])=>optionHTML(value,label)).join("");
+
+ const selected=sessions.find(s=>s.id===selectedSessionId);
+ const preferred=selected?trackKey(selected):(sessions[0]?trackKey(sessions[0]):"");
+ el.value=options.some(([value])=>value===old)?old:preferred
+}
 function fillFilters(){
  const tracks=[...new Set([...sessions.map(s=>s.track),...trackRecords.map(r=>r.track)])].sort();
  const opts='<option value="">全部赛道</option>'+tracks.map(t=>`<option value="${esc(t)}">${esc(t)}</option>`).join("");
- const old1=$("sessionTrackFilter").value,old2=$("trendTrackFilter").value;
+ const old1=$("sessionTrackFilter").value;
  $("sessionTrackFilter").innerHTML=opts;
- $("trendTrackFilter").innerHTML=opts;
  $("sessionTrackFilter").value=tracks.includes(old1)?old1:"";
- $("trendTrackFilter").value=tracks.includes(old2)?old2:(tracks.includes("Rhein-Main")?"Rhein-Main":"");
+ renderTrendOptions();
 
  const dates=sessions.map(s=>String(s.session_date||"").split("-"));
  setFilterOptions("dashboardYearFilter",uniqueSorted(dates.map(p=>p[0]),true),"全部年份");
@@ -577,18 +595,21 @@ async function saveForm(ev){
  const {error}=await client.from("training_sessions").insert(row);if(error)return toast(error.message,true);toast("训练记录已保存。");ev.target.reset();$("fDate").value=new Date().toISOString().slice(0,10);$("fTrack").value="Rhein-Main";$("fVehicleType").value="1:8 Electric Buggy";$("fVariant").value="Spec";$("fTrackGrip").value="100";await loadSessions();setSuggestedSessionNo();autofillTrackRecord();
 }
 function drawTrend(){
- const track=$("trendTrackFilter").value,c=$("chart"),ctx=c.getContext("2d"),ratio=devicePixelRatio||1,W=c.clientWidth,H=300;c.width=W*ratio;c.height=H*ratio;ctx.scale(ratio,ratio);ctx.clearRect(0,0,W,H);
- let data=[...sessions].reverse();if(track)data=data.filter(s=>s.track===track);
+ const trendKey=$("trendTrackFilter").value,c=$("chart"),ctx=c.getContext("2d"),ratio=devicePixelRatio||1,W=c.clientWidth,H=300;c.width=W*ratio;c.height=H*ratio;ctx.scale(ratio,ratio);ctx.clearRect(0,0,W,H);
+ let data=[...sessions].reverse();
+ if(trendKey)data=data.filter(s=>trackKey(s)===trendKey)
  const p={l:55,r:20,t:28,b:48};ctx.font='12px "Microsoft YaHei"';ctx.strokeStyle="#29394c";ctx.fillStyle="#8fa4ba";
  if(!data.length){ctx.fillText("暂无趋势数据",20,30);return}
- if(!track){
+ if(!trendKey){
    data=data.filter(s=>s.record_percent!=null);$("trendTitle").textContent="所有赛道纪录百分比趋势";$("trendLegend").textContent="跨赛道只绘制纪录百分比";
    if(!data.length){ctx.fillText("暂无纪录百分比数据",20,30);return}
    const vals=data.map(s=>Number(s.record_percent)),min=Math.max(0,Math.floor(Math.min(...vals)-5)),max=Math.ceil(Math.max(...vals)+5);
    for(let v=min;v<=max;v+=5){const y=p.t+(max-v)/(max-min)*(H-p.t-p.b);ctx.beginPath();ctx.moveTo(p.l,y);ctx.lineTo(W-p.r,y);ctx.stroke();ctx.fillText(v+"%",8,y+4)}
    ctx.strokeStyle="#42d392";ctx.fillStyle="#42d392";ctx.lineWidth=3;ctx.beginPath();data.forEach((d,i)=>{const x=data.length===1?(p.l+W-p.r)/2:p.l+i*(W-p.l-p.r)/(data.length-1),y=p.t+(max-Number(d.record_percent))/(max-min)*(H-p.t-p.b);i?ctx.lineTo(x,y):ctx.moveTo(x,y)});ctx.stroke();data.forEach((d,i)=>{const x=data.length===1?(p.l+W-p.r)/2:p.l+i*(W-p.l-p.r)/(data.length-1),y=p.t+(max-Number(d.record_percent))/(max-min)*(H-p.t-p.b);ctx.beginPath();ctx.arc(x,y,4,0,Math.PI*2);ctx.fill();ctx.fillText(Number(d.record_percent).toFixed(1)+"%",x-15,y-10)});
  }else{
-   $("trendTitle").textContent=track+" 成绩趋势";$("trendLegend").textContent="绿色：PB；蓝色：平均";
+   const trendLabel=$("trendTrackFilter").selectedOptions[0]?.textContent||"未选择赛道 / 组别";
+   $("trendTitle").textContent=`${trendLabel} 成绩趋势`;
+   $("trendLegend").textContent="同赛道、同组别：绿色PB；蓝色平均";
    const vals=data.flatMap(x=>[x.best_lap,x.average_lap]).filter(v=>v!=null).map(Number);if(!vals.length){ctx.fillText("暂无圈速趋势数据",20,30);return}
    const min=Math.floor(Math.min(...vals)-1),max=Math.ceil(Math.max(...vals)+1);
    for(let v=min;v<=max;v++){const y=p.t+(max-v)/(max-min)*(H-p.t-p.b);ctx.beginPath();ctx.moveTo(p.l,y);ctx.lineTo(W-p.r,y);ctx.stroke();ctx.fillText(v+"s",8,y+4)}
